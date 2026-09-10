@@ -29,7 +29,7 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         </div>
       </div>
 
-      <button type="button" className="btn btn-ghost-invert" onClick={onNewSearch}>
+      <button type="button" className="btn btn-on-color" onClick={onNewSearch}>
         NOUVELLE RECHERCHE
       </button>
     </div>

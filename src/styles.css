@@ -1,13 +1,54 @@
+/* =========================================================================
+   Tri Courrier — système visuel unique
+   Esthétique : application iOS moderne, fond blanc, minimaliste, très lisible.
+   ========================================================================= */
+
 :root {
-  --bg: #f4f5f7;
+  color-scheme: light;
+
+  /* Neutres */
+  --bg: #ffffff;
   --surface: #ffffff;
-  --text: #16181d;
-  --muted: #5b6270;
-  --border: #d8dbe0;
-  --primary: #1a56db;
-  --primary-text: #ffffff;
-  --danger: #c62828;
-  --radius: 14px;
+  --surface-2: #f5f5f6; /* fond très légèrement grisé, usage rare (états pressés) */
+  --text: #0a0a0b;
+  --text-2: #6b7280;
+  --text-3: #9aa0a6;
+  --border: #ececed;
+  --border-strong: #dcdce0;
+
+  /* Actions */
+  --accent: #111113;
+  --accent-press: #000000;
+  --accent-text: #ffffff;
+  --danger: #d92d20;
+  --danger-surface: #fef3f2;
+  --danger-border: #fda29b;
+
+  /* Rayons cohérents */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-full: 999px;
+
+  /* Espacements */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* Contrôles tactiles */
+  --control-h: 54px;
+
+  /* Ombres — très légères, uniquement pour la hiérarchie */
+  --shadow-sm: 0 1px 2px rgba(16, 18, 20, 0.05);
+  --shadow-card: 0 1px 2px rgba(16, 18, 20, 0.04), 0 6px 16px rgba(16, 18, 20, 0.05);
+
+  /* Transitions — extrêmement courtes */
+  --t: 120ms ease;
+
+  /* Safe areas iOS */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -16,6 +57,7 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
@@ -33,178 +75,156 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   display: flex;
   flex-direction: column;
+  background: var(--bg);
 }
 
-/* ---------- Layout ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
 
-.page {
+/* =========================================================================
+   Ossature d'écran : barre supérieure NETTE (pas de flou) + corps scrollable
+   ========================================================================= */
+
+.screen {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-top: calc(var(--safe-top) + 16px);
-  padding-bottom: calc(var(--safe-bottom) + 16px);
-  padding-left: calc(var(--safe-left) + 16px);
-  padding-right: calc(var(--safe-right) + 16px);
+  min-height: 100%;
+  background: var(--bg);
 }
 
-.page-center {
-  justify-content: center;
+/* Barre de navigation : fond blanc OPAQUE, hairline, aucun backdrop-filter. */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
   align-items: center;
-  gap: 22px;
+  gap: var(--s-3);
+  padding: calc(var(--safe-top) + 10px) calc(var(--safe-right) + var(--s-4)) 10px
+    calc(var(--safe-left) + var(--s-4));
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
-.page-pad {
-  gap: 14px;
+.appbar-title {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.appbar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -6px;
+  padding: 6px 6px 6px 2px;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: opacity var(--t);
+}
+
+.appbar-back:active {
+  opacity: 0.55;
+}
+
+.appbar-spacer {
+  flex: 1;
+}
+
+.screen-body {
+  flex: 1;
+  width: 100%;
   max-width: 640px;
-  width: 100%;
   margin: 0 auto;
-}
-
-/* ---------- Search home ---------- */
-
-.search-home {
-  text-align: center;
-}
-
-/* Pendant la saisie : on remonte le contenu en haut pour laisser la place
-   aux suggestions (preshot). */
-.search-home-active {
-  align-items: center;
-  gap: 16px;
-}
-
-/* ---------- Suggestions (preshot) ---------- */
-
-.suggestions {
-  width: 100%;
-  max-width: 460px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  overflow-y: auto;
+  gap: var(--s-4);
+  padding: var(--s-4) calc(var(--safe-right) + var(--s-4))
+    calc(var(--safe-bottom) + var(--s-5)) calc(var(--safe-left) + var(--s-4));
   -webkit-overflow-scrolling: touch;
 }
 
-.suggestion {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.suggestion:active {
-  border-color: var(--primary);
-}
-
-.suggestion-name {
-  font-size: 19px;
-  font-weight: 800;
-}
-
-.suggestion-addr {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.suggestions-empty {
-  color: var(--muted);
-  font-size: 15px;
-  margin: 6px 0;
-}
-
-.title {
-  font-size: clamp(1.8rem, 8vw, 2.6rem);
-  letter-spacing: 0.06em;
-  margin: 0;
-  font-weight: 800;
-}
-
-.search-form {
-  width: 100%;
-  max-width: 460px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.search-field {
-  display: flex;
+.center-screen {
   align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0 14px;
+  justify-content: center;
+  gap: var(--s-5);
+  padding: calc(var(--safe-top) + var(--s-5)) var(--s-4) calc(var(--safe-bottom) + var(--s-5));
+  text-align: center;
 }
 
-.search-field:focus-within {
-  border-color: var(--primary);
-}
-
-.search-field-icon {
-  color: var(--muted);
-  display: flex;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 20px; /* >= 16px : évite le zoom auto iOS */
-  padding: 18px 0;
-  color: var(--text);
-}
-
-.settings-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 15px;
-  padding: 10px;
-  cursor: pointer;
-}
-
-/* ---------- Buttons ---------- */
+/* =========================================================================
+   Boutons
+   ========================================================================= */
 
 .btn {
-  font-size: 18px;
-  font-weight: 700;
-  border: none;
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  cursor: pointer;
-  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--control-h);
+  padding: 0 var(--s-5);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
   line-height: 1.2;
-  -webkit-tap-highlight-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition:
+    transform var(--t),
+    background var(--t),
+    border-color var(--t),
+    opacity var(--t);
+}
+
+.btn:active {
+  transform: scale(0.985);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: var(--primary-text);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-primary:active {
+  background: var(--accent-press);
 }
 
 .btn-secondary {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid var(--border);
+  border-color: var(--border-strong);
+}
+
+.btn-secondary:active {
+  background: var(--surface-2);
 }
 
 .btn-danger {
@@ -213,43 +233,241 @@ body {
 }
 
 .btn-ghost {
+  min-height: 44px;
   background: transparent;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  font-size: 15px;
-  padding: 12px;
+  color: var(--text-2);
+  border-color: var(--border);
+  font-weight: 550;
+  font-size: 14px;
+}
+
+.btn-lg {
+  min-height: 58px;
+  font-size: 17px;
+  border-radius: var(--r-lg);
 }
 
 .btn-block {
   width: 100%;
 }
 
-.btn-small {
-  font-size: 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  color: var(--text);
+/* Bouton sur fond coloré (écran résultat) : blanc plein, texte foncé, contraste garanti. */
+.btn-on-color {
+  width: 100%;
+  max-width: 460px;
+  min-height: 58px;
+  background: #ffffff;
+  color: #0a0a0b;
+  border-radius: var(--r-lg);
+  font-size: 17px;
+  font-weight: 650;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
 }
 
-.btn-small.btn-danger {
-  border-color: var(--danger);
-  background: #fff;
+/* Petites actions de ligne (listes) : discrètes, style lien. */
+.link-btn {
+  min-height: 40px;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t);
+}
+
+.link-btn:active {
+  background: var(--surface-2);
+}
+
+.link-btn.danger {
   color: var(--danger);
 }
 
-.btn:disabled {
-  opacity: 0.5;
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background var(--t),
+    color var(--t);
 }
 
-.btn-ghost-invert {
-  background: rgba(255, 255, 255, 0.16);
-  color: inherit;
-  border: 2px solid currentColor;
+.icon-btn:active {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
-/* ---------- Result screen ---------- */
+/* =========================================================================
+   Page d'accueil — Recherche
+   ========================================================================= */
+
+.home {
+  align-items: center;
+  padding: calc(var(--safe-top) + var(--s-5)) calc(var(--safe-right) + var(--s-4))
+    calc(var(--safe-bottom) + var(--s-4)) calc(var(--safe-left) + var(--s-4));
+}
+
+.home-db {
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--safe-right) + 14px);
+  z-index: 5;
+}
+
+.home-inner {
+  flex: 1;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--s-4);
+}
+
+/* Pendant la saisie : le contenu se cale en haut, les suggestions prennent la place. */
+.home-inner-active {
+  justify-content: flex-start;
+  padding-top: var(--s-4);
+}
+
+.home-title {
+  margin: 0 0 var(--s-2);
+  text-align: center;
+  font-size: clamp(22px, 6.5vw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.home-inner-active .home-title {
+  font-size: 18px;
+  margin-bottom: 0;
+  letter-spacing: 0.12em;
+  color: var(--text-2);
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 58px;
+  padding: 0 var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  transition: border-color var(--t), box-shadow var(--t);
+}
+
+.search-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 17, 19, 0.08);
+}
+
+.search-field-icon {
+  display: flex;
+  color: var(--text-3);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 18px; /* >= 16px : évite le zoom auto iOS */
+  font-weight: 500;
+  padding: 16px 0;
+  color: var(--text);
+}
+
+.search-input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+/* =========================================================================
+   Suggestions (preshot) & listes de choix
+   ========================================================================= */
+
+.suggestions,
+.stack {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-height: 64px;
+  padding: 13px 2px;
+  text-align: left;
+  background: var(--surface);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t);
+}
+
+.suggestion:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.suggestion:active {
+  background: var(--surface-2);
+}
+
+.suggestion-name {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.suggestion-addr {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.empty-note {
+  padding: var(--s-5) var(--s-4);
+  margin: 0;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.big-note {
+  margin: 0;
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* =========================================================================
+   Écran résultat — couleurs des 16 colonnes CONSERVÉES
+   ========================================================================= */
 
 .result {
   flex: 1;
@@ -257,19 +475,19 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  /* Safe area iOS (Dynamic Island / encoche) + respiration responsive :
-     le NOM + PRÉNOM descend nettement sous la Dynamic Island sans marge fixe. */
-  padding: calc(var(--safe-top) + clamp(26px, 8vh, 68px)) 16px
-    calc(var(--safe-bottom) + 18px);
-  gap: 12px;
+  /* Safe area iOS (Dynamic Island) + respiration : NOM + PRÉNOM nettement
+     sous la Dynamic Island, jamais dans une zone floue. */
+  padding: calc(var(--safe-top) + clamp(30px, 9vh, 76px)) var(--s-4)
+    calc(var(--safe-bottom) + var(--s-4));
+  gap: var(--s-3);
 }
 
 .result-name {
   width: 100%;
-  /* Légèrement plus grand qu'avant (1.4–2rem → 1.7–2.6rem). */
   font-size: clamp(1.7rem, 7.5vw, 2.6rem);
   font-weight: 800;
   line-height: 1.15;
+  letter-spacing: -0.01em;
   word-break: break-word;
 }
 
@@ -290,18 +508,16 @@ body {
   justify-content: center;
   gap: 0.35em;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   line-height: 1;
-  /* Panneau et Colonne : exactement la même taille de texte. */
   font-size: clamp(2.2rem, 12vw, 5rem);
 }
 
 .figure .figure-number {
   font-weight: 900;
-  font-size: 1.55em; /* le numéro, plus grand — identique pour panneau et colonne */
+  font-size: 1.55em;
 }
 
-/* Sans panneau : la colonne peut occuper toute la zone. */
 .result-figures-solo .figure {
   flex-direction: column;
   gap: 0.1em;
@@ -313,191 +529,141 @@ body {
   line-height: 0.95;
 }
 
-.result .btn-ghost-invert {
-  width: 100%;
-  max-width: 460px;
+/* =========================================================================
+   Base de données
+   ========================================================================= */
+
+.toast {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text);
 }
 
-/* ---------- Multiple results ---------- */
-
-.list-count {
-  font-weight: 700;
-  color: var(--muted);
-  margin: 4px 0;
-}
-
-.choice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-
-.choice-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  cursor: pointer;
-}
-
-.choice-name {
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.choice-addr {
-  color: var(--muted);
-  font-size: 15px;
-}
-
-.none-msg {
-  font-size: clamp(1.2rem, 6vw, 1.8rem);
-  font-weight: 800;
-  text-align: center;
-}
-
-/* ---------- Database page ---------- */
-
-.db-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.btn-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 15px;
-  padding: 6px 4px;
-  cursor: pointer;
-}
-
-.db-title {
-  font-size: 1.2rem;
-  margin: 0;
+.section-label {
+  margin: var(--s-2) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
   letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.db-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
 }
 
 .db-tools {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--s-2);
 }
 
 .db-tools .btn {
   flex: 1;
-  min-width: 140px;
-  font-size: 15px;
-  padding: 14px;
+  min-height: 48px;
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .btn-file {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  cursor: pointer;
 }
 
-.db-search {
-  margin-top: 4px;
-}
-
-.hint {
-  color: var(--muted);
-  font-size: 14px;
-  margin: 2px 0;
-}
-
-.flash {
-  background: #e7f0ff;
-  border: 1px solid #b6d0ff;
-  color: #123a8a;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
-
-.person-list {
+/* Liste des personnes / rues — cartes cohérentes */
+.card-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--s-2);
 }
 
-.person-item {
+.card-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
+  border-radius: var(--r-md);
+}
+
+.card-main {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
 
-.person-main {
+.card-title {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.card-sub {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.card-meta {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-2);
 }
 
-.person-name {
-  font-weight: 800;
-  font-size: 17px;
+.colonne-badge {
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
-.person-addr {
-  color: var(--muted);
+.row-actions {
+  display: flex;
+  gap: var(--s-3);
+  margin: 2px -6px -6px;
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--border);
+}
+
+.row-actions .link-btn {
+  flex: 0 0 auto;
+}
+
+.empty-row {
+  padding: var(--s-5);
+  text-align: center;
+  color: var(--text-2);
   font-size: 14px;
 }
 
-.person-meta {
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
+/* =========================================================================
+   Formulaires
+   ========================================================================= */
 
-.person-colonne-badge {
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.person-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.person-actions .btn-small {
-  flex: 1;
-}
-
-/* ---------- Forms ---------- */
-
-.person-form {
+.form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.form-title {
-  margin: 0;
-  font-size: 1.2rem;
+  gap: var(--s-4);
 }
 
 .field {
@@ -507,107 +673,122 @@ body {
 }
 
 .field-label {
-  font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
 }
 
-.text-input {
+.input {
   width: 100%;
+  min-height: var(--control-h);
+  padding: 14px var(--s-4);
   font-size: 17px; /* >= 16px : évite le zoom auto iOS */
-  padding: 14px;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+  font-weight: 500;
   color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
   outline: none;
+  transition: border-color var(--t), box-shadow var(--t);
 }
 
-.text-input:focus {
-  border-color: var(--primary);
+.input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 17, 19, 0.08);
+}
+
+/* select natif : même allure que .input, chevron discret, adapté iPhone */
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 42px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-2) 50%),
+    linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 22px) calc(50% - 2px),
+    calc(100% - 16px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }
 
 .field-error {
+  margin: 0;
   color: var(--danger);
   font-size: 13px;
   font-weight: 600;
 }
 
 .field-hint {
-  color: var(--muted);
+  color: var(--text-2);
   font-size: 13px;
-}
-
-/* select natif : même allure que .text-input, adapté iPhone */
-select.text-input {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 20px) calc(1.25rem),
-    calc(100% - 14px) calc(1.25rem);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
-  padding-right: 40px;
-}
-
-.rue-add {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .form-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 4px;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
 }
 
 .form-actions .btn {
   flex: 1;
 }
 
-/* ---------- Import preview ---------- */
+.rue-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* =========================================================================
+   Aperçu d'import
+   ========================================================================= */
 
 .import-summary {
   list-style: none;
-  padding: 14px;
   margin: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: var(--s-4);
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 550;
 }
 
 .import-rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-2);
   max-height: 40vh;
   overflow-y: auto;
 }
 
 .import-row {
-  font-size: 13px;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
 }
 
 .import-row-invalid {
-  background: #fdecec;
-  border-color: #f2b8b8;
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
 }
 
 .import-row-duplicate {
-  background: #fff6e5;
-  border-color: #f2d9a8;
+  background: #fff8eb;
+  border-color: #f5d99b;
 }
 
 .import-row-line {
@@ -615,63 +796,48 @@ select.text-input {
 }
 
 .import-row-tag {
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 11px;
+  letter-spacing: 0.03em;
 }
 
 .import-row-errors {
   color: var(--danger);
 }
 
-/* ---------- Modal ---------- */
+/* =========================================================================
+   Modale (confirmation)
+   ========================================================================= */
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  z-index: 10;
+  padding: var(--s-5);
+  background: rgba(10, 10, 12, 0.32);
 }
 
 .modal {
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 20px;
   width: 100%;
   max-width: 360px;
+  padding: var(--s-5);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .modal-text {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 16px;
+  margin: 0 0 var(--s-3);
+  font-size: 17px;
+  font-weight: 650;
   text-align: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101215;
-    --surface: #1b1e24;
-    --text: #f2f3f5;
-    --muted: #9aa1ad;
-    --border: #333844;
-    --primary: #4d84f0;
-  }
-  .flash {
-    background: #16233d;
-    border-color: #2c4a7d;
-    color: #cfe0ff;
-  }
-  .import-row-invalid {
-    background: #3a1e1e;
-    border-color: #6b3232;
-  }
-  .import-row-duplicate {
-    background: #3a3320;
-    border-color: #6b5a32;
-  }
+.modal .hint {
+  margin-bottom: var(--s-4);
+  text-align: center;
 }

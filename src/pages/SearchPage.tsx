@@ -79,33 +79,37 @@ export default function SearchPage() {
 
   if (phase.kind === 'list') {
     return (
-      <div className="page page-pad">
-        <p className="list-count">{phase.results.length} résultats</p>
-        <div className="choice-list">
-          {phase.results.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="choice-card"
-              onClick={() => setPhase({ kind: 'one', person: p })}
-            >
-              <span className="choice-name">{fullName(p)}</span>
-              <span className="choice-addr">{p.adresse}</span>
-            </button>
-          ))}
+      <div className="screen">
+        <header className="appbar">
+          <span className="appbar-title">{phase.results.length} résultats</span>
+        </header>
+        <div className="screen-body">
+          <div className="stack">
+            {phase.results.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="suggestion"
+                onClick={() => setPhase({ kind: 'one', person: p })}
+              >
+                <span className="suggestion-name">{fullName(p)}</span>
+                <span className="suggestion-addr">{p.adresse}</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="btn btn-secondary btn-block" onClick={newSearch}>
+            NOUVELLE RECHERCHE
+          </button>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={newSearch}>
-          NOUVELLE RECHERCHE
-        </button>
       </div>
     );
   }
 
   if (phase.kind === 'none') {
     return (
-      <div className="page page-center">
-        <p className="none-msg">AUCUN DESTINATAIRE TROUVÉ</p>
-        <button type="button" className="btn btn-primary" onClick={newSearch}>
+      <div className="screen center-screen">
+        <p className="big-note">Aucun destinataire trouvé</p>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={newSearch}>
           NOUVELLE RECHERCHE
         </button>
       </div>
@@ -115,71 +119,72 @@ export default function SearchPage() {
   const hasQuery = query.trim() !== '';
 
   return (
-    <div className={`page search-home${hasQuery ? ' search-home-active' : ' page-center'}`}>
-      <h1 className="title">TRI COURRIER</h1>
-
-      <form
-        className="search-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void runSearch();
-        }}
-      >
-        <div className="search-field">
-          <span className="search-field-icon">
-            <SearchIcon />
-          </span>
-          <input
-            ref={inputRef}
-            className="search-input"
-            type="text"
-            inputMode="text"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            autoComplete="off"
-            spellCheck={false}
-            enterKeyHint="search"
-            placeholder="Nom du destinataire"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={busy}>
-          RECHERCHER
-        </button>
-      </form>
-
-      {hasQuery && (
-        <div className="suggestions" role="listbox" aria-label="Suggestions">
-          {suggestions.length === 0 ? (
-            <p className="suggestions-empty">Aucun nom ne commence par « {query.trim()} »</p>
-          ) : (
-            suggestions.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                role="option"
-                aria-selected="false"
-                className="suggestion"
-                onClick={() => setPhase({ kind: 'one', person: p })}
-              >
-                <span className="suggestion-name">{fullName(p)}</span>
-                <span className="suggestion-addr">{p.adresse}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-
+    <div className="screen home">
       <button
         type="button"
-        className="settings-link"
+        className="icon-btn home-db"
         onClick={() => navigate('database')}
         aria-label="Base de données"
       >
         <DatabaseIcon />
-        <span>Base de données</span>
       </button>
+
+      <div className={`home-inner${hasQuery ? ' home-inner-active' : ''}`}>
+        <h1 className="home-title">TRI COURRIER</h1>
+
+        <form
+          className="search-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void runSearch();
+          }}
+        >
+          <div className="search-field">
+            <span className="search-field-icon">
+              <SearchIcon />
+            </span>
+            <input
+              ref={inputRef}
+              className="search-input"
+              type="text"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              enterKeyHint="search"
+              placeholder="Nom du destinataire"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={busy}>
+            RECHERCHER
+          </button>
+        </form>
+
+        {hasQuery && (
+          <div className="suggestions" role="listbox" aria-label="Suggestions">
+            {suggestions.length === 0 ? (
+              <p className="empty-note">Aucun nom ne commence par « {query.trim()} »</p>
+            ) : (
+              suggestions.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  className="suggestion"
+                  onClick={() => setPhase({ kind: 'one', person: p })}
+                >
+                  <span className="suggestion-name">{fullName(p)}</span>
+                  <span className="suggestion-addr">{p.adresse}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -21,7 +21,6 @@ import type { Person, PersonInput } from '../types/person';
 import type { Rue } from '../types/rue';
 import { normalizeText } from '../utils/normalizeText';
 import { getColumnColor } from '../utils/columnColors';
-import RueManager from '../components/RueManager';
 import {
   buildImportPreview,
   downloadFile,
@@ -31,6 +30,7 @@ import {
   type ImportPreview,
 } from '../services/importExport';
 import PersonForm from '../components/PersonForm';
+import RueManager from '../components/RueManager';
 import { BackIcon } from '../components/icons';
 import { DEMO_PERSONS } from '../services/demoData';
 
@@ -111,7 +111,7 @@ export default function DatabasePage() {
       const preview = await buildImportPreview(file);
       setView({ kind: 'import', preview });
     } catch {
-      flash("Impossible de lire ce fichier CSV.");
+      flash('Impossible de lire ce fichier CSV.');
     } finally {
       setImportBusy(false);
     }
@@ -147,23 +147,31 @@ export default function DatabasePage() {
 
   // ---- Rendus ----
 
-  if (view.kind === 'add') {
+  if (view.kind === 'add' || view.kind === 'edit') {
+    const isEdit = view.kind === 'edit';
     return (
-      <div className="page page-pad">
-        <PersonForm rues={rues} onSubmit={handleAdd} onCancel={() => setView({ kind: 'list' })} />
-      </div>
-    );
-  }
-
-  if (view.kind === 'edit') {
-    return (
-      <div className="page page-pad">
-        <PersonForm
-          initial={view.person}
-          rues={rues}
-          onSubmit={handleEdit}
-          onCancel={() => setView({ kind: 'list' })}
-        />
+      <div className="screen">
+        <header className="appbar">
+          <button
+            type="button"
+            className="appbar-back"
+            onClick={() => setView({ kind: 'list' })}
+          >
+            <BackIcon size={20} />
+            <span>Retour</span>
+          </button>
+          <span className="appbar-title">
+            {isEdit ? 'Modifier une personne' : 'Ajouter une personne'}
+          </span>
+        </header>
+        <div className="screen-body">
+          <PersonForm
+            initial={isEdit ? view.person : undefined}
+            rues={rues}
+            onSubmit={isEdit ? handleEdit : handleAdd}
+            onCancel={() => setView({ kind: 'list' })}
+          />
+        </div>
       </div>
     );
   }
@@ -185,176 +193,190 @@ export default function DatabasePage() {
   if (view.kind === 'import') {
     const { preview } = view;
     return (
-      <div className="page page-pad">
-        <h2 className="form-title">Aperçu de l'import</h2>
-        <ul className="import-summary">
-          <li>Personnes détectées : {preview.total}</li>
-          <li>Lignes valides : {preview.validCount}</li>
-          <li>Lignes invalides : {preview.invalidCount}</li>
-          <li>Doublons : {preview.duplicateCount}</li>
-        </ul>
-
-        {preview.rows.some((r) => r.status !== 'valid') && (
-          <div className="import-rows">
-            {preview.rows
-              .filter((r) => r.status !== 'valid')
-              .map((r) => (
-                <div key={r.line} className={`import-row import-row-${r.status}`}>
-                  <span className="import-row-line">Ligne {r.line}</span>{' '}
-                  <span>
-                    {r.display.nom} {r.display.prenom} — {r.display.adresse}
-                  </span>
-                  <span className="import-row-tag">
-                    {r.status === 'duplicate' ? 'doublon ignoré' : 'invalide'}
-                  </span>
-                  {r.errors.length > 0 && (
-                    <span className="import-row-errors">{r.errors.join(' ')}</span>
-                  )}
-                </div>
-              ))}
-          </div>
-        )}
-
-        <div className="form-actions">
+      <div className="screen">
+        <header className="appbar">
           <button
             type="button"
-            className="btn btn-secondary"
+            className="appbar-back"
             onClick={() => setView({ kind: 'list' })}
           >
-            ANNULER
+            <BackIcon size={20} />
+            <span>Retour</span>
           </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => void confirmImport()}
-            disabled={preview.toImport.length === 0}
-          >
-            IMPORTER ({preview.toImport.length})
-          </button>
+          <span className="appbar-title">Aperçu de l'import</span>
+        </header>
+        <div className="screen-body">
+          <ul className="import-summary">
+            <li>Personnes détectées : {preview.total}</li>
+            <li>Lignes valides : {preview.validCount}</li>
+            <li>Lignes invalides : {preview.invalidCount}</li>
+            <li>Doublons : {preview.duplicateCount}</li>
+          </ul>
+
+          {preview.rows.some((r) => r.status !== 'valid') && (
+            <div className="import-rows">
+              {preview.rows
+                .filter((r) => r.status !== 'valid')
+                .map((r) => (
+                  <div key={r.line} className={`import-row import-row-${r.status}`}>
+                    <span className="import-row-line">Ligne {r.line}</span>{' '}
+                    <span>
+                      {r.display.nom} {r.display.prenom} — {r.display.adresse}
+                    </span>
+                    <span className="import-row-tag">
+                      {r.status === 'duplicate' ? 'doublon ignoré' : 'invalide'}
+                    </span>
+                    {r.errors.length > 0 && (
+                      <span className="import-row-errors">{r.errors.join(' ')}</span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setView({ kind: 'list' })}
+            >
+              ANNULER
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void confirmImport()}
+              disabled={preview.toImport.length === 0}
+            >
+              IMPORTER ({preview.toImport.length})
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page page-pad">
-      <header className="db-header">
-        <button type="button" className="btn-back" onClick={() => navigate('search')}>
-          <BackIcon />
-          <span>RETOUR</span>
+    <div className="screen">
+      <header className="appbar">
+        <button type="button" className="appbar-back" onClick={() => navigate('search')}>
+          <BackIcon size={20} />
+          <span>Recherche</span>
         </button>
-        <h1 className="db-title">BASE DE DONNÉES</h1>
+        <span className="appbar-title">Base de données</span>
       </header>
 
-      {message && <div className="flash">{message}</div>}
+      <div className="screen-body">
+        {message && <div className="toast">{message}</div>}
 
-      <button
-        type="button"
-        className="btn btn-primary btn-block"
-        onClick={() => setView({ kind: 'add' })}
-      >
-        AJOUTER UNE PERSONNE
-      </button>
+        <div className="db-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            onClick={() => setView({ kind: 'add' })}
+          >
+            AJOUTER UNE PERSONNE
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={() => setView({ kind: 'rues' })}
+          >
+            GÉRER LES RUES ({rues.length})
+          </button>
+          <div className="db-tools">
+            <label className="btn btn-secondary btn-file">
+              IMPORTER
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => void handleFileChosen(e)}
+                hidden
+              />
+            </label>
+            <button type="button" className="btn btn-secondary" onClick={exportCSV}>
+              EXPORT CSV
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={exportJSON}>
+              EXPORT JSON
+            </button>
+          </div>
+          {importBusy && <p className="hint">Lecture du fichier…</p>}
+          {import.meta.env.DEV && (
+            <button type="button" className="btn btn-ghost" onClick={() => void loadDemo()}>
+              + Données de démonstration (dev)
+            </button>
+          )}
+        </div>
 
-      <button
-        type="button"
-        className="btn btn-secondary btn-block"
-        onClick={() => setView({ kind: 'rues' })}
-      >
-        GÉRER LES RUES ({rues.length})
-      </button>
-
-      <div className="db-tools">
-        <label className="btn btn-secondary btn-file">
-          IMPORTER UNE BASE
+        <div className="field">
+          <span className="section-label">Destinataires ({persons.length})</span>
           <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(e) => void handleFileChosen(e)}
-            hidden
+            className="input"
+            type="text"
+            placeholder="Rechercher (nom, prénom, adresse)…"
+            value={adminQuery}
+            onChange={(e) => setAdminQuery(e.target.value)}
           />
-        </label>
-        <button type="button" className="btn btn-secondary" onClick={exportCSV}>
-          EXPORT CSV
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={exportJSON}>
-          EXPORT JSON
-        </button>
-      </div>
-      {importBusy && <p className="hint">Lecture du fichier…</p>}
+        </div>
 
-      {import.meta.env.DEV && (
-        <button type="button" className="btn btn-ghost" onClick={() => void loadDemo()}>
-          + Données de démonstration (dev)
-        </button>
-      )}
+        <p className="hint">Données stockées uniquement sur cet appareil.</p>
 
-      <input
-        className="text-input db-search"
-        type="text"
-        placeholder="Rechercher (nom, prénom, adresse)…"
-        value={adminQuery}
-        onChange={(e) => setAdminQuery(e.target.value)}
-      />
-
-      <p className="hint">
-        {persons.length} personne(s) enregistrée(s) — données stockées uniquement sur cet appareil.
-      </p>
-
-      <ul className="person-list">
-        {filtered.map((p) => {
-          const color = getColumnColor(p.colonne);
-          return (
-            <li key={p.id} className="person-item">
-              <div className="person-main">
-                <span className="person-name">{fullName(p)}</span>
-                <span className="person-addr">{p.adresse}</span>
-                <span className="person-meta">
-                  {p.panneau !== null && <>Panneau {p.panneau} • </>}
-                  <span
-                    className="person-colonne-badge"
-                    style={{ background: color.bg, color: color.fg }}
-                  >
-                    Colonne {p.colonne}
+        <ul className="card-list">
+          {filtered.map((p) => {
+            const color = getColumnColor(p.colonne);
+            return (
+              <li key={p.id} className="card-row">
+                <div className="card-main">
+                  <span className="card-title">{fullName(p)}</span>
+                  <span className="card-sub">{p.adresse}</span>
+                  <span className="card-meta">
+                    {p.panneau !== null && <>Panneau {p.panneau}</>}
+                    <span
+                      className="colonne-badge"
+                      style={{ background: color.bg, color: color.fg }}
+                    >
+                      Colonne {p.colonne}
+                    </span>
                   </span>
-                </span>
-              </div>
-              <div className="person-actions">
-                <button
-                  type="button"
-                  className="btn btn-small"
-                  onClick={() => setView({ kind: 'edit', person: p })}
-                >
-                  MODIFIER
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-small btn-danger"
-                  onClick={() => setToDelete(p)}
-                >
-                  SUPPRIMER
-                </button>
-              </div>
-            </li>
-          );
-        })}
-        {filtered.length === 0 && <li className="hint">Aucune entrée.</li>}
-      </ul>
+                </div>
+                <div className="row-actions">
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setView({ kind: 'edit', person: p })}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    className="link-btn danger"
+                    onClick={() => setToDelete(p)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+          {filtered.length === 0 && <li className="empty-row">Aucune entrée.</li>}
+        </ul>
+      </div>
 
       {toDelete && (
         <div className="modal-backdrop" onClick={() => setToDelete(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <p className="modal-text">Supprimer {fullName(toDelete)} ?</p>
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setToDelete(null)}>
-                ANNULER
-              </button>
               <button
                 type="button"
-                className="btn btn-danger"
-                onClick={() => void confirmDelete()}
+                className="btn btn-secondary"
+                onClick={() => setToDelete(null)}
               >
+                ANNULER
+              </button>
+              <button type="button" className="btn btn-danger" onClick={() => void confirmDelete()}>
                 SUPPRIMER
               </button>
             </div>

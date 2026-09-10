@@ -61,13 +61,11 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
   }
 
   return (
-    <form className="person-form" onSubmit={handleSubmit} noValidate>
-      <h2 className="form-title">{initial ? 'Modifier une personne' : 'Ajouter une personne'}</h2>
-
+    <form className="form" onSubmit={handleSubmit} noValidate>
       <label className="field">
         <span className="field-label">Nom *</span>
         <input
-          className="text-input"
+          className="input"
           type="text"
           value={fields.nom}
           autoCapitalize="characters"
@@ -80,7 +78,7 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
       <label className="field">
         <span className="field-label">Prénom</span>
         <input
-          className="text-input"
+          className="input"
           type="text"
           value={fields.prenom}
           onChange={(e) => set('prenom', e.target.value)}
@@ -90,7 +88,7 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
       <label className="field">
         <span className="field-label">Numéro *</span>
         <input
-          className="text-input"
+          className="input"
           type="number"
           inputMode="numeric"
           min={1}
@@ -109,7 +107,7 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
           </span>
         ) : (
           <select
-            className="text-input"
+            className="input"
             value={fields.rueId}
             onChange={(e) => set('rueId', e.target.value)}
           >
@@ -130,7 +128,7 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
       <label className="field">
         <span className="field-label">Colonne * (1 à 16)</span>
         <input
-          className="text-input"
+          className="input"
           type="number"
           inputMode="numeric"
           min={1}
@@ -144,7 +142,7 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
       <label className="field">
         <span className="field-label">Panneau</span>
         <input
-          className="text-input"
+          className="input"
           type="number"
           inputMode="numeric"
           min={1}

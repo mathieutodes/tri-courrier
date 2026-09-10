@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Rue } from '../types/rue';
 import { cleanStored, normalizeText } from '../utils/normalizeText';
+import { BackIcon } from './icons';
 
 interface Props {
   rues: Rue[];
@@ -53,87 +54,84 @@ export default function RueManager({ rues, onAdd, onUpdate, onDelete, onBack }: 
   }
 
   return (
-    <div className="page page-pad">
-      <button type="button" className="btn-back" onClick={onBack}>
-        <span>← RETOUR</span>
-      </button>
-      <h2 className="form-title">Gérer les rues</h2>
-
-      <form className="rue-add" onSubmit={handleAdd}>
-        <input
-          className="text-input"
-          type="text"
-          placeholder="Nouvelle rue (ex. Rue Victor Hugo)"
-          value={draft}
-          autoCapitalize="words"
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary">
-          AJOUTER
+    <div className="screen">
+      <header className="appbar">
+        <button type="button" className="appbar-back" onClick={onBack}>
+          <BackIcon size={20} />
+          <span>Retour</span>
         </button>
-      </form>
-      {error && <span className="field-error">{error}</span>}
+        <span className="appbar-title">Gérer les rues</span>
+      </header>
 
-      <p className="hint">{rues.length} rue(s) enregistrée(s).</p>
+      <div className="screen-body">
+        <form className="rue-add" onSubmit={handleAdd}>
+          <input
+            className="input"
+            type="text"
+            placeholder="Nouvelle rue (ex. Rue Victor Hugo)"
+            value={draft}
+            autoCapitalize="words"
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary btn-block">
+            AJOUTER UNE RUE
+          </button>
+          {error && <span className="field-error">{error}</span>}
+        </form>
 
-      <ul className="person-list">
-        {rues.map((rue) => (
-          <li key={rue.id} className="person-item">
-            {editingId === rue.id ? (
-              <>
-                <input
-                  className="text-input"
-                  type="text"
-                  value={editingNom}
-                  autoCapitalize="words"
-                  onChange={(e) => setEditingNom(e.target.value)}
-                />
-                <div className="person-actions">
-                  <button
-                    type="button"
-                    className="btn btn-small btn-secondary"
-                    onClick={() => setEditingId(null)}
-                  >
-                    ANNULER
-                  </button>
-                  <button type="button" className="btn btn-small" onClick={saveEdit}>
-                    ENREGISTRER
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <span className="person-name">{rue.nom}</span>
-                <div className="person-actions">
-                  <button
-                    type="button"
-                    className="btn btn-small"
-                    onClick={() => startEdit(rue)}
-                  >
-                    MODIFIER
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-small btn-danger"
-                    onClick={() => setToDelete(rue)}
-                  >
-                    SUPPRIMER
-                  </button>
-                </div>
-              </>
-            )}
-          </li>
-        ))}
-        {rues.length === 0 && <li className="hint">Aucune rue.</li>}
-      </ul>
+        <p className="section-label">{rues.length} rue(s)</p>
+
+        <ul className="card-list">
+          {rues.map((rue) => (
+            <li key={rue.id} className="card-row">
+              {editingId === rue.id ? (
+                <>
+                  <input
+                    className="input"
+                    type="text"
+                    value={editingNom}
+                    autoCapitalize="words"
+                    onChange={(e) => setEditingNom(e.target.value)}
+                  />
+                  <div className="row-actions">
+                    <button type="button" className="link-btn" onClick={() => setEditingId(null)}>
+                      Annuler
+                    </button>
+                    <button type="button" className="link-btn" onClick={saveEdit}>
+                      Enregistrer
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="card-title">{rue.nom}</span>
+                  <div className="row-actions">
+                    <button type="button" className="link-btn" onClick={() => startEdit(rue)}>
+                      Modifier
+                    </button>
+                    <button
+                      type="button"
+                      className="link-btn danger"
+                      onClick={() => setToDelete(rue)}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
+          {rues.length === 0 && <li className="empty-row">Aucune rue enregistrée.</li>}
+        </ul>
+      </div>
 
       {toDelete && (
         <div className="modal-backdrop" onClick={() => setToDelete(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <p className="modal-text">Supprimer la rue « {toDelete.nom} » ?</p>
             <p className="hint">
-              Les personnes déjà enregistrées gardent leur adresse ; elles devront
-              seulement resélectionner une rue si vous les modifiez.
+              Les personnes déjà enregistrées gardent leur adresse ; elles devront seulement
+              resélectionner une rue si vous les modifiez.
             </p>
             <div className="form-actions">
               <button
