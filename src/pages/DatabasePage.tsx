@@ -1,0 +1,329 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { navigate } from '../App';
+import {
+  addPersonSynced,
+  bulkAddPersonsSynced,
+  deletePersonSynced,
+  ensurePersonsLoaded,
+  refreshPersons,
+  updatePersonSynced,
+  usePersons,
+} from '../db/personStore';
+import type { Person, PersonInput } from '../types/person';
+import { normalizeText } from '../utils/normalizeText';
+import { getColumnColor } from '../utils/columnColors';
+import {
+  buildImportPreview,
+  downloadFile,
+  personsToCSV,
+  personsToJSON,
+  timestampedName,
+  type ImportPreview,
+} from '../services/importExport';
+import PersonForm from '../components/PersonForm';
+import { BackIcon } from '../components/icons';
+import { DEMO_PERSONS } from '../services/demoData';
+
+type View =
+  | { kind: 'list' }
+  | { kind: 'add' }
+  | { kind: 'edit'; person: Person }
+  | { kind: 'import'; preview: ImportPreview };
+
+function fullName(p: Person): string {
+  return p.prenom ? `${p.nom} ${p.prenom}` : p.nom;
+}
+
+export default function DatabasePage() {
+  const persons = usePersons();
+  const [view, setView] = useState<View>({ kind: 'list' });
+  const [adminQuery, setAdminQuery] = useState('');
+  const [toDelete, setToDelete] = useState<Person | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    ensurePersonsLoaded();
+    void refreshPersons();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = normalizeText(adminQuery);
+    const list = [...persons].sort((a, b) => {
+      const c = normalizeText(a.nom).localeCompare(normalizeText(b.nom));
+      return c !== 0 ? c : normalizeText(a.prenom).localeCompare(normalizeText(b.prenom));
+    });
+    if (q === '') return list;
+    return list.filter(
+      (p) =>
+        normalizeText(p.nom).includes(q) ||
+        normalizeText(p.prenom).includes(q) ||
+        normalizeText(p.adresse).includes(q),
+    );
+  }, [persons, adminQuery]);
+
+  function flash(text: string) {
+    setMessage(text);
+    window.setTimeout(() => setMessage(null), 3500);
+  }
+
+  async function handleAdd(value: PersonInput) {
+    await addPersonSynced(value);
+    setView({ kind: 'list' });
+    flash('Personne ajoutée.');
+  }
+
+  async function handleEdit(value: PersonInput) {
+    if (view.kind !== 'edit') return;
+    await updatePersonSynced({ id: view.person.id, ...value });
+    setView({ kind: 'list' });
+    flash('Modifications enregistrées.');
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    await deletePersonSynced(toDelete.id);
+    setToDelete(null);
+    flash('Personne supprimée.');
+  }
+
+  async function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportBusy(true);
+    try {
+      const preview = await buildImportPreview(file);
+      setView({ kind: 'import', preview });
+    } catch {
+      flash("Impossible de lire ce fichier CSV.");
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  async function confirmImport() {
+    if (view.kind !== 'import') return;
+    const { toImport, duplicateCount } = view.preview;
+    await bulkAddPersonsSynced(toImport);
+    setView({ kind: 'list' });
+    flash(
+      `${toImport.length} personne(s) importée(s)` +
+        (duplicateCount > 0 ? `, ${duplicateCount} doublon(s) ignoré(s).` : '.'),
+    );
+  }
+
+  function exportCSV() {
+    downloadFile(timestampedName('tri-courrier', 'csv'), personsToCSV(persons), 'text/csv');
+  }
+
+  function exportJSON() {
+    downloadFile(
+      timestampedName('tri-courrier', 'json'),
+      personsToJSON(persons),
+      'application/json',
+    );
+  }
+
+  async function loadDemo() {
+    await bulkAddPersonsSynced(DEMO_PERSONS);
+    flash('Données de démonstration ajoutées.');
+  }
+
+  // ---- Rendus ----
+
+  if (view.kind === 'add') {
+    return (
+      <div className="page page-pad">
+        <PersonForm onSubmit={handleAdd} onCancel={() => setView({ kind: 'list' })} />
+      </div>
+    );
+  }
+
+  if (view.kind === 'edit') {
+    return (
+      <div className="page page-pad">
+        <PersonForm
+          initial={view.person}
+          onSubmit={handleEdit}
+          onCancel={() => setView({ kind: 'list' })}
+        />
+      </div>
+    );
+  }
+
+  if (view.kind === 'import') {
+    const { preview } = view;
+    return (
+      <div className="page page-pad">
+        <h2 className="form-title">Aperçu de l'import</h2>
+        <ul className="import-summary">
+          <li>Personnes détectées : {preview.total}</li>
+          <li>Lignes valides : {preview.validCount}</li>
+          <li>Lignes invalides : {preview.invalidCount}</li>
+          <li>Doublons : {preview.duplicateCount}</li>
+        </ul>
+
+        {preview.rows.some((r) => r.status !== 'valid') && (
+          <div className="import-rows">
+            {preview.rows
+              .filter((r) => r.status !== 'valid')
+              .map((r) => (
+                <div key={r.line} className={`import-row import-row-${r.status}`}>
+                  <span className="import-row-line">Ligne {r.line}</span>{' '}
+                  <span>
+                    {r.display.nom} {r.display.prenom} — {r.display.adresse}
+                  </span>
+                  <span className="import-row-tag">
+                    {r.status === 'duplicate' ? 'doublon ignoré' : 'invalide'}
+                  </span>
+                  {r.errors.length > 0 && (
+                    <span className="import-row-errors">{r.errors.join(' ')}</span>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setView({ kind: 'list' })}
+          >
+            ANNULER
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void confirmImport()}
+            disabled={preview.toImport.length === 0}
+          >
+            IMPORTER ({preview.toImport.length})
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page page-pad">
+      <header className="db-header">
+        <button type="button" className="btn-back" onClick={() => navigate('search')}>
+          <BackIcon />
+          <span>RETOUR</span>
+        </button>
+        <h1 className="db-title">BASE DE DONNÉES</h1>
+      </header>
+
+      {message && <div className="flash">{message}</div>}
+
+      <button
+        type="button"
+        className="btn btn-primary btn-block"
+        onClick={() => setView({ kind: 'add' })}
+      >
+        AJOUTER UNE PERSONNE
+      </button>
+
+      <div className="db-tools">
+        <label className="btn btn-secondary btn-file">
+          IMPORTER UNE BASE
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => void handleFileChosen(e)}
+            hidden
+          />
+        </label>
+        <button type="button" className="btn btn-secondary" onClick={exportCSV}>
+          EXPORT CSV
+        </button>
+        <button type="button" className="btn btn-secondary" onClick={exportJSON}>
+          EXPORT JSON
+        </button>
+      </div>
+      {importBusy && <p className="hint">Lecture du fichier…</p>}
+
+      {import.meta.env.DEV && (
+        <button type="button" className="btn btn-ghost" onClick={() => void loadDemo()}>
+          + Données de démonstration (dev)
+        </button>
+      )}
+
+      <input
+        className="text-input db-search"
+        type="text"
+        placeholder="Rechercher (nom, prénom, adresse)…"
+        value={adminQuery}
+        onChange={(e) => setAdminQuery(e.target.value)}
+      />
+
+      <p className="hint">
+        {persons.length} personne(s) enregistrée(s) — données stockées uniquement sur cet appareil.
+      </p>
+
+      <ul className="person-list">
+        {filtered.map((p) => {
+          const color = getColumnColor(p.colonne);
+          return (
+            <li key={p.id} className="person-item">
+              <div className="person-main">
+                <span className="person-name">{fullName(p)}</span>
+                <span className="person-addr">{p.adresse}</span>
+                <span className="person-meta">
+                  {p.panneau !== null && <>Panneau {p.panneau} • </>}
+                  <span
+                    className="person-colonne-badge"
+                    style={{ background: color.bg, color: color.fg }}
+                  >
+                    Colonne {p.colonne}
+                  </span>
+                </span>
+              </div>
+              <div className="person-actions">
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => setView({ kind: 'edit', person: p })}
+                >
+                  MODIFIER
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small btn-danger"
+                  onClick={() => setToDelete(p)}
+                >
+                  SUPPRIMER
+                </button>
+              </div>
+            </li>
+          );
+        })}
+        {filtered.length === 0 && <li className="hint">Aucune entrée.</li>}
+      </ul>
+
+      {toDelete && (
+        <div className="modal-backdrop" onClick={() => setToDelete(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <p className="modal-text">Supprimer {fullName(toDelete)} ?</p>
+            <div className="form-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setToDelete(null)}>
+                ANNULER
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => void confirmDelete()}
+              >
+                SUPPRIMER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
