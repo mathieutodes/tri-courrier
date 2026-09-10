@@ -13,6 +13,11 @@ dist-ssr
 dev-dist
 *.local
 
+# Local data files & secrets (never commit recipient data or environment)
+*.csv
+.env
+.env.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
