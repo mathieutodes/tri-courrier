@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { parseColonne, parsePanneau, validatePerson } from './validation';
+import {
+  parseColonne,
+  parseNumero,
+  parsePanneau,
+  validatePerson,
+  validatePersonForm,
+} from './validation';
+import type { Rue } from '../types/rue';
 
 describe('parseColonne', () => {
   it('accepte 1 à 16', () => {
@@ -37,16 +44,38 @@ describe('parsePanneau', () => {
   });
 });
 
-describe('validatePerson', () => {
+describe('parseNumero', () => {
+  it('accepte un entier strictement positif', () => {
+    expect(parseNumero('24')).toBe(24);
+    expect(parseNumero(' 1 ')).toBe(1);
+  });
+
+  it('refuse 0, négatif, vide, non entier', () => {
+    expect(parseNumero('0')).toBeNull();
+    expect(parseNumero('-3')).toBeNull();
+    expect(parseNumero('')).toBeNull();
+    expect(parseNumero('12.5')).toBeNull();
+  });
+
+  it('refuse bis / ter / lettres', () => {
+    expect(parseNumero('12bis')).toBeNull();
+    expect(parseNumero('12 ter')).toBeNull();
+    expect(parseNumero('12A')).toBeNull();
+  });
+});
+
+describe('validatePerson (CSV — adresse libre)', () => {
   const base = { nom: 'DUPONT', prenom: 'Jean', adresse: '12 rue Victor Hugo', colonne: '5', panneau: '1' };
 
-  it('valide une entrée correcte', () => {
+  it('valide une entrée correcte (numeroRue / rueId null)', () => {
     const r = validatePerson(base);
     expect(r.valid).toBe(true);
     expect(r.value).toEqual({
       nom: 'DUPONT',
       prenom: 'Jean',
       adresse: '12 rue Victor Hugo',
+      numeroRue: null,
+      rueId: null,
       colonne: 5,
       panneau: 1,
     });
@@ -68,6 +97,45 @@ describe('validatePerson', () => {
     const r = validatePerson({ ...base, prenom: '', panneau: '' });
     expect(r.valid).toBe(true);
     expect(r.value?.prenom).toBeNull();
+    expect(r.value?.panneau).toBeNull();
+  });
+});
+
+describe('validatePersonForm (numéro + rue)', () => {
+  const rues: Rue[] = [
+    { id: 'r1', nom: 'Rue Victor Hugo' },
+    { id: 'r2', nom: 'Avenue de Paris' },
+  ];
+  const base = { nom: 'DUPONT', prenom: 'Jean', numero: '24', rueId: 'r1', colonne: '5', panneau: '1' };
+
+  it('construit l’adresse "24 Rue Victor Hugo" et renseigne numeroRue / rueId', () => {
+    const r = validatePersonForm(base, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value).toEqual({
+      nom: 'DUPONT',
+      prenom: 'Jean',
+      adresse: '24 Rue Victor Hugo',
+      numeroRue: 24,
+      rueId: 'r1',
+      colonne: 5,
+      panneau: 1,
+    });
+  });
+
+  it('exige un numéro entier strictement positif', () => {
+    expect(validatePersonForm({ ...base, numero: '0' }, rues).errors.numero).toBeDefined();
+    expect(validatePersonForm({ ...base, numero: '12bis' }, rues).errors.numero).toBeDefined();
+  });
+
+  it('exige une rue existante', () => {
+    expect(validatePersonForm({ ...base, rueId: '' }, rues).errors.rueId).toBeDefined();
+    expect(validatePersonForm({ ...base, rueId: 'inconnue' }, rues).errors.rueId).toBeDefined();
+  });
+
+  it('garde la colonne entre 1 et 16 et le panneau facultatif', () => {
+    expect(validatePersonForm({ ...base, colonne: '17' }, rues).errors.colonne).toBeDefined();
+    const r = validatePersonForm({ ...base, panneau: '' }, rues);
+    expect(r.valid).toBe(true);
     expect(r.value?.panneau).toBeNull();
   });
 });

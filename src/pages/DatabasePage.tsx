@@ -9,9 +9,19 @@ import {
   updatePersonSynced,
   usePersons,
 } from '../db/personStore';
+import {
+  addRueSynced,
+  deleteRueSynced,
+  ensureRuesLoaded,
+  refreshRues,
+  updateRueSynced,
+  useRues,
+} from '../db/rueStore';
 import type { Person, PersonInput } from '../types/person';
+import type { Rue } from '../types/rue';
 import { normalizeText } from '../utils/normalizeText';
 import { getColumnColor } from '../utils/columnColors';
+import RueManager from '../components/RueManager';
 import {
   buildImportPreview,
   downloadFile,
@@ -28,6 +38,7 @@ type View =
   | { kind: 'list' }
   | { kind: 'add' }
   | { kind: 'edit'; person: Person }
+  | { kind: 'rues' }
   | { kind: 'import'; preview: ImportPreview };
 
 function fullName(p: Person): string {
@@ -36,6 +47,7 @@ function fullName(p: Person): string {
 
 export default function DatabasePage() {
   const persons = usePersons();
+  const rues = useRues();
   const [view, setView] = useState<View>({ kind: 'list' });
   const [adminQuery, setAdminQuery] = useState('');
   const [toDelete, setToDelete] = useState<Person | null>(null);
@@ -45,7 +57,9 @@ export default function DatabasePage() {
 
   useEffect(() => {
     ensurePersonsLoaded();
+    ensureRuesLoaded();
     void refreshPersons();
+    void refreshRues();
   }, []);
 
   const filtered = useMemo(() => {
@@ -136,7 +150,7 @@ export default function DatabasePage() {
   if (view.kind === 'add') {
     return (
       <div className="page page-pad">
-        <PersonForm onSubmit={handleAdd} onCancel={() => setView({ kind: 'list' })} />
+        <PersonForm rues={rues} onSubmit={handleAdd} onCancel={() => setView({ kind: 'list' })} />
       </div>
     );
   }
@@ -146,10 +160,25 @@ export default function DatabasePage() {
       <div className="page page-pad">
         <PersonForm
           initial={view.person}
+          rues={rues}
           onSubmit={handleEdit}
           onCancel={() => setView({ kind: 'list' })}
         />
       </div>
+    );
+  }
+
+  if (view.kind === 'rues') {
+    return (
+      <RueManager
+        rues={rues}
+        onAdd={async (nom) => {
+          await addRueSynced(nom);
+        }}
+        onUpdate={(rue: Rue) => updateRueSynced(rue)}
+        onDelete={(id) => deleteRueSynced(id)}
+        onBack={() => setView({ kind: 'list' })}
+      />
     );
   }
 
@@ -225,6 +254,14 @@ export default function DatabasePage() {
         onClick={() => setView({ kind: 'add' })}
       >
         AJOUTER UNE PERSONNE
+      </button>
+
+      <button
+        type="button"
+        className="btn btn-secondary btn-block"
+        onClick={() => setView({ kind: 'rues' })}
+      >
+        GÉRER LES RUES ({rues.length})
       </button>
 
       <div className="db-tools">

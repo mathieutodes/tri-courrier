@@ -1,34 +1,58 @@
 import { useState } from 'react';
 import type { Person, PersonInput } from '../types/person';
-import { validatePerson, type RawPersonFields, type ValidationErrors } from '../utils/validation';
+import type { Rue } from '../types/rue';
+import { decomposeAdresse } from '../utils/adresse';
+import {
+  validatePersonForm,
+  type PersonFormErrors,
+  type RawPersonForm,
+} from '../utils/validation';
 
 interface Props {
   initial?: Person;
+  rues: Rue[];
   onSubmit: (value: PersonInput) => void;
   onCancel: () => void;
 }
 
-function toRaw(person?: Person): RawPersonFields {
+function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
+  let numero = person?.numeroRue != null ? String(person.numeroRue) : '';
+  let rueId = person?.rueId && rues.some((r) => r.id === person.rueId) ? person.rueId : '';
+
+  // Ancienne entrée (adresse libre) : tentative de correspondance best-effort.
+  if (person && (numero === '' || rueId === '')) {
+    const guess = decomposeAdresse(person.adresse, rues);
+    if (guess) {
+      if (numero === '') numero = String(guess.numeroRue);
+      if (rueId === '') rueId = guess.rueId;
+    }
+  }
+
   return {
     nom: person?.nom ?? '',
     prenom: person?.prenom ?? '',
-    adresse: person?.adresse ?? '',
+    numero,
+    rueId,
     colonne: person ? String(person.colonne) : '',
     panneau: person && person.panneau !== null ? String(person.panneau) : '',
   };
 }
 
-export default function PersonForm({ initial, onSubmit, onCancel }: Props) {
-  const [fields, setFields] = useState<RawPersonFields>(toRaw(initial));
-  const [errors, setErrors] = useState<ValidationErrors>({});
+export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props) {
+  const [fields, setFields] = useState<RawPersonForm>(() => toRawForm(initial, rues));
+  const [errors, setErrors] = useState<PersonFormErrors>({});
 
-  function set<K extends keyof RawPersonFields>(key: K, value: string) {
+  // Adresse actuelle non retrouvée automatiquement : on la montre pour info.
+  const legacyAdresse =
+    initial && (fields.numero === '' || fields.rueId === '') ? initial.adresse : null;
+
+  function set<K extends keyof RawPersonForm>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = validatePerson(fields);
+    const result = validatePersonForm(fields, rues);
     if (!result.valid || !result.value) {
       setErrors(result.errors);
       return;
@@ -64,14 +88,43 @@ export default function PersonForm({ initial, onSubmit, onCancel }: Props) {
       </label>
 
       <label className="field">
-        <span className="field-label">Adresse *</span>
+        <span className="field-label">Numéro *</span>
         <input
           className="text-input"
-          type="text"
-          value={fields.adresse}
-          onChange={(e) => set('adresse', e.target.value)}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          step={1}
+          value={fields.numero}
+          onChange={(e) => set('numero', e.target.value)}
         />
-        {errors.adresse && <span className="field-error">{errors.adresse}</span>}
+        {errors.numero && <span className="field-error">{errors.numero}</span>}
+      </label>
+
+      <label className="field">
+        <span className="field-label">Rue *</span>
+        {rues.length === 0 ? (
+          <span className="field-hint">
+            Aucune rue enregistrée. Ajoutez d'abord une rue via « Gérer les rues ».
+          </span>
+        ) : (
+          <select
+            className="text-input"
+            value={fields.rueId}
+            onChange={(e) => set('rueId', e.target.value)}
+          >
+            <option value="">— Choisir une rue —</option>
+            {rues.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.nom}
+              </option>
+            ))}
+          </select>
+        )}
+        {errors.rueId && <span className="field-error">{errors.rueId}</span>}
+        {legacyAdresse && (
+          <span className="field-hint">Adresse actuelle : {legacyAdresse}</span>
+        )}
       </label>
 
       <label className="field">

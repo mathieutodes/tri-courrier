@@ -48,6 +48,8 @@ const p = (nom: string, colonne: number, panneau: number | null = null): PersonI
   nom,
   prenom: null,
   adresse: `${nom} rue`,
+  numeroRue: null,
+  rueId: null,
   colonne,
   panneau,
 });

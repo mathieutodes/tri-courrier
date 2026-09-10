@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import type { Person, PersonInput } from '../types/person';
-import { getAllPersons } from '../db/database';
+import { decomposeAdresse, getAllPersons, getAllRues } from '../db/database';
 import { normalizeText } from '../utils/normalizeText';
 import { parseColonne, parsePanneau, validatePerson } from '../utils/validation';
 
@@ -45,7 +45,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
     transformHeader: mapHeader,
   });
 
-  const existing = await getAllPersons();
+  const [existing, rues] = await Promise.all([getAllPersons(), getAllRues()]);
   const seen = new Set<string>(existing.map((p) => dupKey(p.nom, p.prenom, p.adresse)));
 
   const rows: ImportRow[] = [];
@@ -79,6 +79,15 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
         display,
       });
       return;
+    }
+
+    // Best-effort : si l'adresse importée correspond à "<n> <rue connue>",
+    // on renseigne numeroRue + rueId. Sinon on garde l'adresse telle quelle,
+    // sans jamais bloquer la ligne.
+    const decomposed = decomposeAdresse(result.value.adresse, rues);
+    if (decomposed) {
+      result.value.numeroRue = decomposed.numeroRue;
+      result.value.rueId = decomposed.rueId;
     }
 
     const key = dupKey(result.value.nom, result.value.prenom, result.value.adresse);

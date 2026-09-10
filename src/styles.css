@@ -257,14 +257,19 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: calc(var(--safe-top) + 18px) 16px calc(var(--safe-bottom) + 18px);
+  /* Safe area iOS (Dynamic Island / encoche) + respiration responsive :
+     le NOM + PRÉNOM descend nettement sous la Dynamic Island sans marge fixe. */
+  padding: calc(var(--safe-top) + clamp(26px, 8vh, 68px)) 16px
+    calc(var(--safe-bottom) + 18px);
   gap: 12px;
 }
 
 .result-name {
   width: 100%;
-  font-size: clamp(1.4rem, 6vw, 2rem);
+  /* Légèrement plus grand qu'avant (1.4–2rem → 1.7–2.6rem). */
+  font-size: clamp(1.7rem, 7.5vw, 2.6rem);
   font-weight: 800;
+  line-height: 1.15;
   word-break: break-word;
 }
 
@@ -525,6 +530,31 @@ body {
   color: var(--danger);
   font-size: 13px;
   font-weight: 600;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* select natif : même allure que .text-input, adapté iPhone */
+select.text-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(1.25rem),
+    calc(100% - 14px) calc(1.25rem);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+
+.rue-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .form-actions {

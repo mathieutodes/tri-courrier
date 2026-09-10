@@ -2,14 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { filterByNomPrefix } from './database';
 import type { Person } from '../types/person';
 
+const mk = (id: string, nom: string, prenom: string | null, colonne: number): Person => ({
+  id,
+  nom,
+  prenom,
+  adresse: `${colonne} rue Test`,
+  numeroRue: null,
+  rueId: null,
+  colonne,
+  panneau: null,
+});
+
 const persons: Person[] = [
-  { id: '1', nom: 'DUPONT', prenom: 'Jean', adresse: '12 rue des Lilas', colonne: 5, panneau: 1 },
-  { id: '2', nom: 'DUPONT', prenom: 'Marie', adresse: '48 avenue Victor Hugo', colonne: 3, panneau: null },
-  { id: '3', nom: 'DURAND', prenom: 'Michel', adresse: '15 rue de la Gare', colonne: 8, panneau: null },
-  { id: '4', nom: 'DUVAL', prenom: 'Anaïs', adresse: '8 rue des Jardins', colonne: 2, panneau: null },
-  { id: '5', nom: 'DUMONT', prenom: 'Élise', adresse: '17 boulevard de Strasbourg', colonne: 9, panneau: null },
-  { id: '6', nom: 'MARTIN', prenom: 'Sophie', adresse: '4 avenue de Paris', colonne: 2, panneau: null },
-  { id: '7', nom: 'Dùpré', prenom: null, adresse: '2 place du Marché', colonne: 7, panneau: null },
+  mk('1', 'DUPONT', 'Jean', 5),
+  mk('2', 'DUPONT', 'Marie', 3),
+  mk('3', 'DURAND', 'Michel', 8),
+  mk('4', 'DUVAL', 'Anaïs', 2),
+  mk('5', 'DUMONT', 'Élise', 9),
+  mk('6', 'MARTIN', 'Sophie', 2),
+  mk('7', 'Dùpré', null, 7),
 ];
 
 const noms = (list: Person[]) => list.map((p) => p.id).sort();
