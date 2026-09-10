@@ -1,7 +1,7 @@
 import { MAX_COLONNE, MIN_COLONNE } from '../types/person';
 
 export interface ColumnColor {
-  /** Couleur de fond de la colonne. */
+  /** Couleur de fond de la colonne (badges, pastilles). */
   bg: string;
   /** Couleur de texte lisible sur ce fond (`#fff` ou `#111`). */
   fg: string;
@@ -9,7 +9,7 @@ export interface ColumnColor {
 
 /**
  * Palette fixe des 16 colonnes.
- * Chaque colonne conserve TOUJOURS la même couleur.
+ * Chaque colonne conserve TOUJOURS la même couleur (association métier).
  * Ne pas réordonner : l'index (1..16) est la clé métier.
  */
 const PALETTE: ColumnColor[] = [
@@ -31,17 +31,51 @@ const PALETTE: ColumnColor[] = [
   { bg: '#455A64', fg: '#ffffff' }, // 16 ardoise
 ];
 
+/**
+ * Variante « accent » de chaque couleur : même teinte que `PALETTE`, mais
+ * éclaircie / désaturée pour rester parfaitement lisible en TEXTE et en
+ * BORDURE sur un fond sombre (écran résultat). L'ordre suit `PALETTE`.
+ */
+const ACCENT: string[] = [
+  '#FF9F45', // 1  orange
+  '#5FD07E', // 2  vert
+  '#5AA9FF', // 3  bleu
+  '#F5D23B', // 4  jaune
+  '#C58AF9', // 5  violet
+  '#FF6B6B', // 6  rouge
+  '#3CD6C4', // 7  turquoise
+  '#FF80B4', // 8  rose
+  '#94A4FF', // 9  indigo
+  '#CBD25C', // 10 vert olive
+  '#D0A78E', // 11 marron clair
+  '#4DD6E8', // 12 cyan
+  '#FF8258', // 13 orange brûlé
+  '#5AC8F0', // 14 bleu clair
+  '#9CD46A', // 15 vert clair
+  '#AEBECB', // 16 ardoise clair
+];
+
 const FALLBACK: ColumnColor = { bg: '#9E9E9E', fg: '#111111' };
+const FALLBACK_ACCENT = '#B9BEC7';
+
+function inRange(column: number): boolean {
+  return Number.isInteger(column) && column >= MIN_COLONNE && column <= MAX_COLONNE;
+}
 
 /**
  * Retourne la couleur fixe associée à une colonne (1..16).
  * Toute valeur hors plage renvoie une couleur neutre de secours.
  */
 export function getColumnColor(column: number): ColumnColor {
-  if (!Number.isInteger(column) || column < MIN_COLONNE || column > MAX_COLONNE) {
-    return FALLBACK;
-  }
-  return PALETTE[column - 1];
+  return inRange(column) ? PALETTE[column - 1] : FALLBACK;
+}
+
+/**
+ * Retourne la couleur d'ACCENT (lisible sur fond sombre) de la colonne (1..16).
+ * Utilisée sur l'écran résultat : bordure de carte, numéros, petit halo.
+ */
+export function getColumnAccent(column: number): string {
+  return inRange(column) ? ACCENT[column - 1] : FALLBACK_ACCENT;
 }
 
 /** Liste (colonne, couleur) pour d'éventuels aperçus / légendes. */

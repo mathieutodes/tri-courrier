@@ -1,28 +1,29 @@
 /* =========================================================================
    Tri Courrier — système visuel unique
-   Esthétique : application iOS moderne, fond blanc, minimaliste, très lisible.
+   Esthétique : application iOS moderne, thème DARK sobre, confortable, lisible.
    ========================================================================= */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* Neutres */
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f5f5f6; /* fond très légèrement grisé, usage rare (états pressés) */
-  --text: #0a0a0b;
-  --text-2: #6b7280;
-  --text-3: #9aa0a6;
-  --border: #ececed;
-  --border-strong: #dcdce0;
+  /* Neutres — thème dark anthracite */
+  --bg: #0f1113; /* fond général presque noir */
+  --surface: #17191d; /* cartes / surfaces légèrement plus claires */
+  --surface-2: #1e2127; /* élévation (carte résultat, états pressés) */
+  --text: #f1f1ee; /* blanc cassé */
+  --text-2: #a2a7b0; /* gris clair */
+  --text-3: #71767f;
+  --border: #2a2d34; /* bordures très discrètes */
+  --border-strong: #3a3e48;
 
-  /* Actions */
-  --accent: #111113;
-  --accent-press: #000000;
-  --accent-text: #ffffff;
-  --danger: #d92d20;
-  --danger-surface: #fef3f2;
-  --danger-border: #fda29b;
+  /* Actions — bouton principal clair, très lisible sur dark */
+  --accent: #f0f0ee;
+  --accent-press: #ffffff;
+  --accent-text: #101114;
+  --danger: #ff7b7b; /* rouge lisible en TEXTE / bordure sur dark */
+  --danger-btn: #e5484d; /* rouge plein pour un bouton, avec texte blanc */
+  --danger-surface: #2a1a1b;
+  --danger-border: #5c2f31;
 
   /* Rayons cohérents */
   --r-sm: 10px;
@@ -41,9 +42,13 @@
   /* Contrôles tactiles */
   --control-h: 54px;
 
-  /* Ombres — très légères, uniquement pour la hiérarchie */
-  --shadow-sm: 0 1px 2px rgba(16, 18, 20, 0.05);
-  --shadow-card: 0 1px 2px rgba(16, 18, 20, 0.04), 0 6px 16px rgba(16, 18, 20, 0.05);
+  /* Focus (sur dark) : bordure grise nette + anneau discret */
+  --focus-border: #8a8f99;
+  --focus-ring: 0 0 0 3px rgba(255, 255, 255, 0.1);
+
+  /* Ombres — discrètes */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.4);
 
   /* Transitions — extrêmement courtes */
   --t: 120ms ease;
@@ -109,7 +114,7 @@ body {
   background: var(--bg);
 }
 
-/* Barre de navigation : fond blanc OPAQUE, hairline, aucun backdrop-filter. */
+/* Barre de navigation : fond OPAQUE (var(--bg)), hairline, aucun backdrop-filter. */
 .appbar {
   position: sticky;
   top: 0;
@@ -228,8 +233,8 @@ body {
 }
 
 .btn-danger {
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-btn);
+  color: #ffffff;
 }
 
 .btn-ghost {
@@ -249,19 +254,6 @@ body {
 
 .btn-block {
   width: 100%;
-}
-
-/* Bouton sur fond coloré (écran résultat) : blanc plein, texte foncé, contraste garanti. */
-.btn-on-color {
-  width: 100%;
-  max-width: 460px;
-  min-height: 58px;
-  background: #ffffff;
-  color: #0a0a0b;
-  border-radius: var(--r-lg);
-  font-size: 17px;
-  font-weight: 650;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
 }
 
 /* Petites actions de ligne (listes) : discrètes, style lien. */
@@ -376,8 +368,8 @@ body {
 }
 
 .search-field:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(17, 17, 19, 0.08);
+  border-color: var(--focus-border);
+  box-shadow: var(--focus-ring);
 }
 
 .search-field-icon {
@@ -466,7 +458,8 @@ body {
 }
 
 /* =========================================================================
-   Écran résultat — couleurs des 16 colonnes CONSERVÉES
+   Écran résultat — fond DARK, la couleur de colonne devient un ACCENT
+   (--accent est injecté en style inline par SearchResultView)
    ========================================================================= */
 
 .result {
@@ -474,59 +467,96 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   text-align: center;
+  background: var(--bg);
   /* Safe area iOS (Dynamic Island) + respiration : NOM + PRÉNOM nettement
      sous la Dynamic Island, jamais dans une zone floue. */
-  padding: calc(var(--safe-top) + clamp(30px, 9vh, 76px)) var(--s-4)
-    calc(var(--safe-bottom) + var(--s-4));
-  gap: var(--s-3);
+  padding: calc(var(--safe-top) + clamp(24px, 7vh, 60px))
+    calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-5))
+    calc(var(--safe-left) + var(--s-4));
+  gap: clamp(var(--s-4), 3.5vh, var(--s-5));
 }
 
 .result-name {
+  flex: 0 0 auto;
   width: 100%;
-  font-size: clamp(1.7rem, 7.5vw, 2.6rem);
+  font-size: clamp(1.7rem, 7.5vw, 2.5rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
+  color: var(--text);
   word-break: break-word;
 }
 
-/* Zone PANNEAU + COLONNE : regroupées, MÊME importance visuelle. */
-.result-figures {
-  flex: 1;
+/* Carte de résultat : surface sombre distincte + bordure d'accent + halo discret. */
+.result-card {
+  flex: 0 1 auto;
+  margin: auto 0;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(var(--s-3), 4vw, var(--s-5));
+  padding: clamp(var(--s-5), 6vw, 40px) var(--s-4);
+  background: var(--surface-2);
+  border: 2px solid var(--accent);
+  border-radius: 28px;
+  box-shadow: 0 18px 48px -32px var(--accent);
+}
+
+.result-card-solo {
+  padding: clamp(var(--s-5), 7vw, 48px) var(--s-4);
+}
+
+/* Un « champ » PANNEAU ou COLONNE : label au-dessus, numéro énorme en dessous. */
+.rfig {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.4rem, 3vh, 1.4rem);
-  width: 100%;
+  gap: clamp(4px, 1.5vh, 12px);
 }
 
-.figure {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.35em;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  font-size: clamp(2.2rem, 12vw, 5rem);
+.rfig-label {
+  font-size: clamp(0.85rem, 3.6vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
-.figure .figure-number {
+/* Les deux numéros : MÊME taille, MÊME style, couleur d'accent de la colonne. */
+.rfig-num {
+  font-size: clamp(3.4rem, 19vw, 6rem);
   font-weight: 900;
-  font-size: 1.55em;
-}
-
-.result-figures-solo .figure {
-  flex-direction: column;
-  gap: 0.1em;
-  font-size: clamp(1.4rem, 7vw, 2.6rem);
-}
-
-.result-figures-solo .figure .figure-number {
-  font-size: clamp(7rem, 46vw, 20rem);
   line-height: 0.95;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.rfig-divider {
+  flex: 0 0 auto;
+  width: 2px;
+  align-self: stretch;
+  margin: clamp(2px, 1vh, 8px) 0;
+  background: var(--accent);
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
+/* Sans panneau : la colonne occupe toute la carte, numéro encore plus grand. */
+.result-card-solo .rfig-num {
+  font-size: clamp(6rem, 44vw, 13rem);
+}
+
+.result-cta {
+  flex: 0 0 auto;
+  margin-top: 0;
+  max-width: 440px;
 }
 
 /* =========================================================================
@@ -698,8 +728,8 @@ body {
 }
 
 .input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(17, 17, 19, 0.08);
+  border-color: var(--focus-border);
+  box-shadow: var(--focus-ring);
 }
 
 /* select natif : même allure que .input, chevron discret, adapté iPhone */
@@ -787,8 +817,8 @@ select.input {
 }
 
 .import-row-duplicate {
-  background: #fff8eb;
-  border-color: #f5d99b;
+  background: #2a2413;
+  border-color: #5c4f2b;
 }
 
 .import-row-line {
