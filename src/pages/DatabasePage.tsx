@@ -24,7 +24,6 @@ import {
 import type { Person, PersonInput } from '../types/person';
 import type { Rue } from '../types/rue';
 import { normalizeText } from '../utils/normalizeText';
-import { getColumnColor } from '../utils/columnColors';
 import { buildAddressOptions, filterPersonsByAddresses } from '../utils/addressFilter';
 import {
   buildImportPreview,
@@ -434,7 +433,6 @@ export default function DatabasePage({ editPersonId = null }: Props) {
 
         <ul className="card-list">
           {filtered.map((p) => {
-            const color = p.colonne !== null ? getColumnColor(p.colonne) : null;
             return (
               <li key={p.id} className="card-row">
                 <div className="card-row-top">
@@ -450,13 +448,11 @@ export default function DatabasePage({ editPersonId = null }: Props) {
                   {p.panneau !== null && (
                     <span className="panneau-badge">Panneau {p.panneau}</span>
                   )}
-                  {p.colonne !== null && color && (
-                    <span
-                      className="colonne-badge"
-                      style={{ background: color.bg, color: color.fg }}
-                    >
-                      Colonne {p.colonne}
-                    </span>
+                  {/* Palette bleue uniforme : la colonne n'a plus de couleur
+                      dédiée par numéro (16 codes couleurs supprimés — voir
+                      design system), même badge que PANNEAU/LOGEMENT. */}
+                  {p.colonne !== null && (
+                    <span className="colonne-badge">Colonne {p.colonne}</span>
                   )}
                   {p.colonne === null && p.logement !== null && p.logement !== '' && (
                     <span className="logement-badge">Logement {p.logement}</span>

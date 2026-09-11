@@ -46,9 +46,9 @@
      remarque, modales). Jamais sur les listes longues (voir plus bas "zones
      volontairement SANS flou — performance iPhone"). Les cartes de liste
      restent des surfaces blanches quasi opaques STATIQUES (aucun blur). */
-  --glass-bg: rgba(255, 255, 255, 0.86); /* surface "hero" — quasi opaque, esprit carte iOS */
-  --glass-bg-strong: rgba(255, 255, 255, 0.94); /* surface dense (appbar, inputs) */
-  --glass-bg-light: rgba(255, 255, 255, 0.96); /* cartes de liste — PAS de blur (perf) */
+  --glass-bg: rgba(247, 251, 255, 0.72); /* surface "hero" — blanc bleuté translucide + blur */
+  --glass-bg-strong: rgba(250, 252, 255, 0.94); /* surface dense (appbar, inputs) */
+  --glass-bg-light: rgba(249, 252, 255, 0.97); /* cartes de liste — PAS de blur (perf) */
   --glass-border: var(--border-soft);
   --glass-border-soft: rgba(255, 255, 255, 0.6);
   --glass-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px -10px rgba(15, 23, 42, 0.14);
@@ -70,12 +70,14 @@
   --appbar-bg: #f6f9fd;
   --appbar-shadow: 0 1px 0 rgba(15, 23, 42, 0.06), 0 2px 10px -6px rgba(15, 23, 42, 0.12);
 
-  /* ---- Accent neutre : fallback carte résultat SANS colonne (jamais de
-     couleur de colonne inventée) — distinct du bleu d'action, volontairement
-     sobre. Peut être surchargé par instance via `--card-accent` inline
-     (voir SearchResultView, couleur de colonne). ---- */
+  /* ---- Accent des chiffres d'emplacement (PANNEAU/COLONNE/LOGEMENT) : bleu
+     iOS uniforme — l'ancienne palette de 16 couleurs par colonne a été
+     supprimée (voir SearchResultView), tous les chiffres suivent désormais
+     le même langage couleur. `--card-accent` reste surchargeable par
+     instance (voir SearchResultView) uniquement pour marquer « une colonne
+     est renseignée » — la valeur elle-même ne varie plus jamais. ---- */
   --accent: #1c2433;
-  --card-accent: var(--accent);
+  --card-accent: var(--ios-blue);
 
   --danger: #d92d20;
   --danger-btn: #d92d20;
@@ -262,6 +264,26 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+/* card-hero : réservée à une poignée de cartes NON répétées de l'écran
+   résultat (identité, emplacement, remarque, réexpédition) — jamais aux
+   listes (Base de données, suggestions, rues : voir `.card-row`/`.suggestion`
+   qui restent des surfaces statiques, sans blur). Rapproche ces cartes de
+   PHOTO 2 : blanc légèrement bleuté, très légère transparence, bordure
+   quasi invisible, profondeur douce — un `backdrop-filter` léger, sur au
+   plus 4 éléments à l'écran à la fois, reste négligeable en coût. */
+.card-hero {
+  background: var(--glass-bg);
+  border-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card-hero {
+    background: var(--glass-bg-light);
+  }
+}
+
 /* Petite surface colorée derrière une icône (avatar identité, carte
    destinataire, ligne de rue…) — jamais de photo, une simple pastille ronde
    avec l'icône en couleur d'accent dessus, toujours nette. */
@@ -289,6 +311,14 @@ body {
 .avatar-sm {
   width: 34px;
   height: 34px;
+}
+
+/* Avatar légèrement plus présent — carte identité de l'écran résultat
+   uniquement (voir PHOTO 2) : les listes (suggestions, Base de données)
+   restent sur la taille par défaut pour ne pas perdre en densité. */
+.avatar-lg {
+  width: 48px;
+  height: 48px;
 }
 
 /* =========================================================================
@@ -742,9 +772,17 @@ body {
   text-align: left;
   background: transparent;
   /* Safe area iOS (Dynamic Island) + respiration, mais compact (voir section
-     densité du design system) : jamais d'espace vide artificiel. */
-  padding: calc(var(--safe-top) + clamp(14px, 4vh, 28px))
-    calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-5))
+     densité du design system) : jamais d'espace vide artificiel. Les cartes
+     s'enchaînent par un simple `gap` régulier ci-dessous — AUCUN élément de
+     cet écran n'utilise plus `margin: auto` : c'était la cause du grand vide
+     vertical constaté entre RÉEXPÉDITION et la carte emplacement (l'auto-
+     margin de `.result-card` absorbait tout l'espace libre de `.result`,
+     poussant la carte — et les boutons après elle — loin de ce qui précède).
+     Avec cette cause supprimée, plus rien n'est artificiellement repoussé :
+     s'il reste de l'espace libre sur un grand iPhone, il se retrouve
+     simplement sous NOUVELLE RECHERCHE, jamais entre les cartes. */
+  padding: calc(var(--safe-top) + clamp(10px, 3vh, 20px))
+    calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-4))
     calc(var(--safe-left) + var(--s-4));
   gap: var(--s-3);
 }
@@ -760,7 +798,7 @@ body {
   width: 100%;
   max-width: 440px;
   align-self: center;
-  padding: var(--s-4);
+  padding: 14px var(--s-4);
   animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
@@ -772,10 +810,12 @@ body {
   gap: 2px;
 }
 
-/* Le nom est fort — reste l'information la plus visible de la carte. */
+/* Le nom est fort — reste l'information la plus visible de la carte. Un nom
+   long (ex. « KHATCHADOURIAN ») se répartit proprement sur plusieurs lignes
+   grâce à `min-width: 0` sur `.result-header` ci-dessus : jamais tronqué. */
 .result-name {
   width: 100%;
-  font-size: clamp(1.25rem, 5.4vw, 1.6rem);
+  font-size: clamp(1.15rem, 5vw, 1.4rem);
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -789,7 +829,7 @@ body {
 .result-address {
   margin: 0;
   width: 100%;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--text-secondary);
@@ -797,115 +837,114 @@ body {
   word-break: break-word;
 }
 
-/* CARTE EMPLACEMENT — la plus importante pendant la tournée : carte claire à
-   profondeur douce, pas de grosse bordure colorée (seuls les chiffres
-   portent l'accent de colonne, voir `.rfig-num` plus bas). */
+/* CARTE EMPLACEMENT — la plus importante pendant la tournée, mais une vraie
+   carte HORIZONTALE compacte inspirée de PHOTO 2 : pastille icône à gauche,
+   chiffres à droite. Cible ≈ 90–110px de hauteur sur iPhone 375px (bien en
+   deçà du maximum de 150–190px), QUELLE QUE SOIT la combinaison affichée —
+   il n'existe plus de variante "solo" agrandie : COLONNE seule utilise
+   exactement la même carte, la même taille de chiffre que PANNEAU+COLONNE
+   ou PANNEAU+LOGEMENT (voir `.rfig-num` plus bas, qui ne dépend plus du
+   nombre d'informations affichées). */
 .result-card {
-  flex: 0 1 auto;
-  margin: auto 0;
+  flex: 0 0 auto;
   align-self: center;
   width: 100%;
   max-width: 440px;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: clamp(var(--s-2), 2vh, var(--s-3));
-  padding: clamp(var(--s-4), 5vw, 32px) var(--s-4);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 14px var(--s-4);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
-.result-card-solo {
-  padding: clamp(var(--s-5), 6vw, 40px) var(--s-4);
-}
-
-/* Petite icône neutre au-dessus des chiffres — repère visuel immédiat, sans
-   jamais rivaliser avec les chiffres eux-mêmes. */
 .result-card-icon {
-  align-self: center;
-  color: var(--text-tertiary);
+  flex: 0 0 auto;
 }
 
+/* La zone chiffres occupe le reste de la largeur et centre son contenu
+   (1 ou 2 "rfig") — même composition, même hauteur, que la carte affiche une
+   seule information (COLONNE) ou deux (PANNEAU + COLONNE/LOGEMENT). */
 .result-card-figures {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: clamp(var(--s-3), 4vw, var(--s-5));
+  gap: clamp(var(--s-3), 5vw, var(--s-5));
 }
 
-/* Un « champ » PANNEAU ou COLONNE : label au-dessus, numéro énorme en dessous. */
+/* Un « champ » PANNEAU ou COLONNE : label au-dessus, numéro en dessous —
+   compact, jamais géant. */
 .rfig {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(4px, 1.5vh, 12px);
+  gap: 2px;
 }
 
 /* Libellé compact et lisible — PANNEAU, pas P A N N E A U : un léger
    espacement de capitale (0.02em), jamais le letter-spacing démesuré
    d'avant. */
 .rfig-label {
-  font-size: clamp(0.8rem, 3.2vw, 1.05rem);
+  font-size: clamp(0.72rem, 2.8vw, 0.85rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-/* PANNEAU reste immédiatement identifiable mais plus discret que
-   COLONNE/LOGEMENT : label légèrement agrandi (repère visuel net) — voir
-   `.rfig-num-neutral` ci-dessous pour le chiffre, qui lui doit rester neutre
-   (jamais coloré de l'accent de colonne). */
+/* PANNEAU reste immédiatement identifiable : label légèrement agrandi
+   (repère visuel net demandé pendant la tournée) — le CHIFFRE, lui, suit
+   maintenant exactement la même couleur que COLONNE/LOGEMENT (voir
+   `.rfig-num-neutral` ci-dessous : palette bleue uniforme, plus de
+   distinction "neutre vs accent"). */
 .rfig-label-panneau {
-  font-size: clamp(0.9rem, 3.6vw, 1.2rem);
+  font-size: clamp(0.8rem, 3.2vw, 0.95rem);
 }
 
-/* Les deux numéros : MÊME taille, MÊME style. COLONNE/LOGEMENT gardent la
-   couleur d'accent (colonne colorée, ou neutre en son absence) ; PANNEAU est
-   volontairement neutre (voir `.rfig-num-neutral`) pour que le chiffre le
-   plus important — celui de la colonne — reste l'élément qui capte l'œil en
-   premier. */
+/* Les deux numéros : MÊME taille, MÊME couleur bleu iOS — PANNEAU, COLONNE
+   et LOGEMENT suivent désormais un langage couleur strictement identique
+   (voir `.rfig-num-neutral`). Taille réduite fortement par rapport à
+   l'ancienne version (jusqu'à 13rem en solo) : le chiffre reste immédiatement
+   lisible pendant la tournée sans déséquilibrer toute la carte. */
 .rfig-num {
-  font-size: clamp(3.4rem, 19vw, 6rem);
-  font-weight: 900;
-  line-height: 0.95;
+  font-size: clamp(1.9rem, 8vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1;
   color: var(--card-accent);
   font-variant-numeric: tabular-nums;
 }
 
 .rfig-num-neutral {
-  color: var(--text);
+  color: var(--ios-blue);
 }
 
 /* Numéro de LOGEMENT : chaîne libre pouvant atteindre 4 caractères et plus
-   (ex. "8407", "A12") — taille réduite par rapport à PANNEAU/COLONNE pour
-   toujours tenir dans sa case sur iPhone, sans jamais déborder ni tronquer.
-   Le libellé LOGEMENT garde le même style que PANNEAU (importance équilibrée). */
+   (ex. "8407", "5125") — taille réduite par rapport à PANNEAU/COLONNE pour
+   toujours tenir confortablement à côté de son libellé sur iPhone, sans
+   jamais déborder, se couper ni revenir à la ligne. */
 .rfig-num-logement {
-  font-size: clamp(2.1rem, 11vw, 3.4rem);
+  font-size: clamp(1.3rem, 5.6vw, 1.6rem);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 /* Séparation verticale TRÈS discrète entre PANNEAU et COLONNE/LOGEMENT :
    neutre, jamais teintée de la couleur de colonne (elle doit rester
-   secondaire, un simple repère structurel). */
+   secondaire, un simple repère structurel). Hauteur alignée sur le contenu
+   (label + chiffre) de `.rfig`, pas sur toute la carte. */
 .rfig-divider {
   flex: 0 0 auto;
   width: 1.5px;
   align-self: stretch;
-  margin: clamp(2px, 1vh, 8px) 0;
   background: var(--border-strong);
   border-radius: 2px;
-}
-
-/* Sans panneau : la colonne occupe toute la carte, numéro encore plus grand. */
-.result-card-solo .rfig-num {
-  font-size: clamp(6rem, 44vw, 13rem);
 }
 
 .result-cta {
@@ -914,23 +953,26 @@ body {
   margin-top: 0;
   width: 100%;
   max-width: 440px;
+  min-height: 46px;
+  box-shadow: none;
 }
 
 /* Bandeau RÉEXPÉDITION : surface rose/rouge extrêmement pâle, icône sur
-   petite surface colorée, titre rouge — élégant mais impossible à manquer.
-   N'affecte jamais la mise en page de la carte panneau/colonne/logement, qui
-   reste pleinement visible juste en dessous. */
+   petite surface colorée bien visible, titre rouge — élégant mais impossible
+   à manquer. Bordure quasiment invisible, padding resserré. N'affecte jamais
+   la mise en page de la carte panneau/colonne/logement, qui reste pleinement
+   visible juste en dessous. */
 .reexpedition-banner {
   flex: 0 0 auto;
   align-self: center;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--s-3);
   width: 100%;
   max-width: 440px;
-  padding: var(--s-3) var(--s-4);
+  padding: 12px var(--s-4);
   background: var(--surface-red);
-  border: 1px solid rgba(255, 59, 48, 0.18);
+  border: 1px solid rgba(255, 59, 48, 0.12);
   border-radius: var(--radius-card);
   box-shadow: var(--glass-shadow-sm);
   color: var(--text-primary);
@@ -940,8 +982,6 @@ body {
 
 .reexpedition-banner-icon {
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
 }
 
 .reexpedition-banner svg {
@@ -951,13 +991,12 @@ body {
 .reexpedition-banner-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .reexpedition-banner-title {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -965,39 +1004,44 @@ body {
 }
 
 .reexpedition-banner-subtitle {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 550;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--text-secondary);
 }
 
-/* Bloc REMARQUE : petite carte claire, icône note à gauche du libellé —
-   reste secondaire par rapport à la carte emplacement au-dessus. */
+/* Bloc REMARQUE : pastille icône bleu pâle à gauche (même langage que
+   l'avatar identité), REMARQUE + texte à droite — reste compact et
+   secondaire par rapport à la carte emplacement au-dessus. */
 .remarque-block {
   flex: 0 0 auto;
   align-self: center;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
   width: 100%;
   max-width: 440px;
-  padding: var(--s-3) var(--s-4);
+  padding: 12px var(--s-4);
   text-align: left;
   animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
-.remarque-heading {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  color: var(--text-secondary);
+.remarque-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
 }
 
-.remarque-heading svg {
-  flex: 0 0 auto;
+.remarque-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .remarque-label {
   display: block;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1008,25 +1052,26 @@ body {
    l'emplacement (pas de grosse typographie). */
 .remarque-text {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--text-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* APPORTER UNE PRÉCISION reste l'action PRIMAIRE (bleu iOS plein) ;
-   NOUVELLE RECHERCHE devient secondaire — jamais deux gros boutons bleus
-   identiques l'un après l'autre. */
+/* APPORTER UNE PRÉCISION reste l'action PRIMAIRE (bleu iOS plein), pilule
+   compacte. NOUVELLE RECHERCHE devient secondaire, légèrement moins haute,
+   sans ombre — jamais deux gros boutons bleus identiques l'un après l'autre. */
 .result-secondary {
   flex: 0 0 auto;
   align-self: center;
   width: 100%;
   max-width: 440px;
-  min-height: 54px;
+  min-height: 50px;
   border-radius: var(--radius-pill);
+  box-shadow: 0 6px 16px -8px rgba(10, 132, 255, 0.45);
 }
 
 /* =========================================================================
@@ -1220,12 +1265,22 @@ body {
   text-transform: uppercase;
 }
 
-/* Pas de colonne (fiche panneau + logement) : pastille neutre, sans couleur inventée. */
+/* PANNEAU / LOGEMENT : pastille neutre, sans couleur inventée. */
 .logement-badge,
 .panneau-badge {
   background: var(--surface-soft);
   border: 1px solid var(--border-strong);
   color: var(--text-secondary);
+}
+
+/* COLONNE : palette bleue UNIFORME — l'ancienne différenciation par 16
+   couleurs (une par numéro de colonne) a été supprimée. Toutes les colonnes,
+   quel que soit leur numéro, partagent désormais la même pastille bleu très
+   pâle, cohérente avec le bleu iOS utilisé sur l'écran résultat. */
+.colonne-badge {
+  background: var(--surface-blue);
+  border: 1px solid rgba(10, 132, 255, 0.22);
+  color: var(--ios-blue);
 }
 
 /* Repère discret liste Base de données : destinataire avec réexpédition

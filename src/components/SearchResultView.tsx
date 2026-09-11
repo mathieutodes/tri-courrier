@@ -1,8 +1,14 @@
 import type { CSSProperties } from 'react';
 import { navigateToEditPerson } from '../App';
 import type { Person } from '../types/person';
-import { getColumnAccent } from '../utils/columnColors';
 import { MailboxIcon, NoteIcon, PencilIcon, PersonIcon, WarningIcon } from './icons';
+
+// Les chiffres PANNEAU/COLONNE/LOGEMENT suivent tous le même bleu iOS (voir
+// section « couleurs » du design system) — l'ancienne palette de 16 couleurs
+// par numéro de colonne a été retirée. `--card-accent` reste injecté en
+// style inline uniquement pour marquer « une colonne est renseignée » (voir
+// `cardStyle` plus bas et le test correspondant) ; sa valeur ne varie plus.
+const COLONNE_ACCENT = 'var(--ios-blue)';
 
 interface Props {
   person: Person;
@@ -32,25 +38,23 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       ? (person.logement as string)
       : null;
 
-  // La couleur de colonne devient l'accent visuel de la carte, via la
-  // variable CSS dédiée `--card-accent` (distincte de `--accent-blue`, la
-  // couleur des boutons d'action — les deux ne doivent jamais se confondre).
-  // Sans colonne (cas PANNEAU + LOGEMENT), on n'invente aucune couleur : la
-  // carte garde le style neutre existant (fallback CSS vers le token global).
-  const accent = hasColonne ? getColumnAccent(person.colonne as number) : null;
-  const cardStyle = accent ? ({ '--card-accent': accent } as CSSProperties) : undefined;
+  // Avec colonne : `--card-accent` est explicitement fixé au bleu iOS (voir
+  // `COLONNE_ACCENT` en tête de fichier). Sans colonne (cas PANNEAU +
+  // LOGEMENT), on n'injecte rien : la carte garde le fallback CSS global
+  // (également bleu iOS désormais — voir :root) — aucune couleur inventée.
+  const cardStyle = hasColonne ? ({ '--card-accent': COLONNE_ACCENT } as CSSProperties) : undefined;
 
   const showPanneauFigure = hasPanneau && secondaryValue !== null;
-  const solo = !showPanneauFigure;
 
   return (
     <div className="result">
       {/* CARTE IDENTITÉ : avatar rond sur petite surface bleu pâle à gauche,
-          NOM Prénom + adresse à droite — NOM/adresse ne flottent plus seuls
-          sur le fond. */}
-      <div className="identity-card card">
-        <span className="avatar avatar-blue" aria-hidden="true">
-          <PersonIcon size={22} />
+          NOM Prénom + adresse à droite. `min-width: 0` (voir CSS) laisse un
+          nom long (ex. « KHATCHADOURIAN ») se répartir proprement sur
+          plusieurs lignes, jamais tronqué. */}
+      <div className="identity-card card card-hero">
+        <span className="avatar avatar-blue avatar-lg" aria-hidden="true">
+          <PersonIcon size={23} />
         </span>
         <div className="result-header">
           <div className="result-name">{fullName(person)}</div>
@@ -63,7 +67,7 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       </div>
 
       {person.reexpedition && (
-        <div className="reexpedition-banner" role="status">
+        <div className="reexpedition-banner card-hero" role="status">
           <span className="avatar avatar-red reexpedition-banner-icon" aria-hidden="true">
             <WarningIcon size={18} />
           </span>
@@ -76,17 +80,20 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         </div>
       )}
 
-      {/* CARTE EMPLACEMENT — priorité maximale pendant la tournée. */}
-      <div className={`result-card card${solo ? ' result-card-solo' : ''}`} style={cardStyle}>
-        <span className="result-card-icon" aria-hidden="true">
-          <MailboxIcon size={22} />
+      {/* CARTE EMPLACEMENT — priorité maximale pendant la tournée. Carte
+          HORIZONTALE compacte : pastille icône à gauche, chiffres à droite —
+          la hauteur ne varie (quasiment) pas selon 1 ou 2 informations
+          affichées (voir CSS : plus de mode "solo" agrandi). */}
+      <div className="result-card card card-hero" style={cardStyle}>
+        <span className="avatar avatar-blue result-card-icon" aria-hidden="true">
+          <MailboxIcon size={20} />
         </span>
         <div className="result-card-figures">
           {showPanneauFigure && (
             <>
-              {/* PANNEAU : immédiatement identifiable (label légèrement
-                  agrandi) mais volontairement neutre — le chiffre le plus
-                  important reste celui de COLONNE/LOGEMENT à côté. */}
+              {/* PANNEAU : label légèrement agrandi (repère immédiat), mais
+                  chiffre au même bleu iOS que COLONNE/LOGEMENT — plus de
+                  distinction "neutre vs accent" (voir design system). */}
               <div className="rfig">
                 <span className="rfig-label rfig-label-panneau">PANNEAU</span>
                 <span className="rfig-num rfig-num-neutral">{person.panneau}</span>
@@ -111,12 +118,14 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       </div>
 
       {person.remarque !== null && person.remarque.trim() !== '' && (
-        <div className="remarque-block card">
-          <div className="remarque-heading">
+        <div className="remarque-block card card-hero">
+          <span className="avatar avatar-blue avatar-sm remarque-icon" aria-hidden="true">
             <NoteIcon size={15} />
+          </span>
+          <div className="remarque-body">
             <span className="remarque-label">REMARQUE</span>
+            <p className="remarque-text">{person.remarque}</p>
           </div>
-          <p className="remarque-text">{person.remarque}</p>
         </div>
       )}
 
