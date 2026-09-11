@@ -33,30 +33,31 @@ const PALETTE: ColumnColor[] = [
 
 /**
  * Variante « accent » de chaque couleur : même teinte que `PALETTE`, mais
- * éclaircie / désaturée pour rester parfaitement lisible en TEXTE et en
- * BORDURE sur un fond sombre (écran résultat). L'ordre suit `PALETTE`.
+ * assombrie quand nécessaire pour rester parfaitement lisible en TEXTE et en
+ * BORDURE sur un fond CLAIR (écran résultat) — contraste vérifié ≥ 4,5:1 sur
+ * blanc. L'ordre suit `PALETTE`.
  */
 const ACCENT: string[] = [
-  '#FF9F45', // 1  orange
-  '#5FD07E', // 2  vert
-  '#5AA9FF', // 3  bleu
-  '#F5D23B', // 4  jaune
-  '#C58AF9', // 5  violet
-  '#FF6B6B', // 6  rouge
-  '#3CD6C4', // 7  turquoise
-  '#FF80B4', // 8  rose
-  '#94A4FF', // 9  indigo
-  '#CBD25C', // 10 vert olive
-  '#D0A78E', // 11 marron clair
-  '#4DD6E8', // 12 cyan
-  '#FF8258', // 13 orange brûlé
-  '#5AC8F0', // 14 bleu clair
-  '#9CD46A', // 15 vert clair
-  '#AEBECB', // 16 ardoise clair
+  '#B85D00', // 1  orange (assombri)
+  '#2E7D32', // 2  vert
+  '#1565C0', // 3  bleu
+  '#896E08', // 4  jaune (assombri)
+  '#6A1B9A', // 5  violet
+  '#C62828', // 6  rouge
+  '#00796B', // 7  turquoise
+  '#AD1457', // 8  rose foncé
+  '#283593', // 9  indigo
+  '#76761B', // 10 vert olive (assombri)
+  '#4E342E', // 11 marron
+  '#00808E', // 12 cyan (assombri)
+  '#CD4014', // 13 orange brûlé (assombri)
+  '#008191', // 14 bleu clair (assombri)
+  '#577D2E', // 15 vert clair (assombri)
+  '#455A64', // 16 ardoise
 ];
 
 const FALLBACK: ColumnColor = { bg: '#9E9E9E', fg: '#111111' };
-const FALLBACK_ACCENT = '#B9BEC7';
+const FALLBACK_ACCENT = '#6B7280';
 
 function inRange(column: number): boolean {
   return Number.isInteger(column) && column >= MIN_COLONNE && column <= MAX_COLONNE;
@@ -71,8 +72,8 @@ export function getColumnColor(column: number): ColumnColor {
 }
 
 /**
- * Retourne la couleur d'ACCENT (lisible sur fond sombre) de la colonne (1..16).
- * Utilisée sur l'écran résultat : bordure de carte, numéros, petit halo.
+ * Retourne la couleur d'ACCENT (lisible sur fond clair) de la colonne (1..16).
+ * Utilisée sur l'écran résultat : bordure de carte, numéros.
  */
 export function getColumnAccent(column: number): string {
   return inRange(column) ? ACCENT[column - 1] : FALLBACK_ACCENT;

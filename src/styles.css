@@ -1,29 +1,29 @@
 /* =========================================================================
    Tri Courrier — système visuel unique
-   Esthétique : application iOS moderne, thème DARK sobre, confortable, lisible.
+   Esthétique : application iOS moderne, thème CLAIR sobre, minimaliste, lisible.
    ========================================================================= */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Neutres — thème dark anthracite */
-  --bg: #0f1113; /* fond général presque noir */
-  --surface: #17191d; /* cartes / surfaces légèrement plus claires */
-  --surface-2: #1e2127; /* élévation (carte résultat, états pressés) */
-  --text: #f1f1ee; /* blanc cassé */
-  --text-2: #a2a7b0; /* gris clair */
-  --text-3: #71767f;
-  --border: #2a2d34; /* bordures très discrètes */
-  --border-strong: #3a3e48;
+  /* Neutres */
+  --bg: #ffffff; /* fond général blanc */
+  --surface: #ffffff; /* cartes / champs — séparés du fond par bordure + ombre légère */
+  --surface-2: #f5f5f6; /* fond très légèrement grisé (élévation, états pressés) */
+  --text: #0a0a0b; /* texte principal, quasi noir */
+  --text-2: #6b7280; /* gris secondaire */
+  --text-3: #9aa0a6; /* gris tertiaire (placeholders) */
+  --border: #ececed; /* bordures très discrètes */
+  --border-strong: #dcdce0;
 
-  /* Actions — bouton principal clair, très lisible sur dark */
-  --accent: #f0f0ee;
-  --accent-press: #ffffff;
-  --accent-text: #101114;
-  --danger: #ff7b7b; /* rouge lisible en TEXTE / bordure sur dark */
-  --danger-btn: #e5484d; /* rouge plein pour un bouton, avec texte blanc */
-  --danger-surface: #2a1a1b;
-  --danger-border: #5c2f31;
+  /* Actions — bouton principal sombre, très lisible sur fond clair */
+  --accent: #111113;
+  --accent-press: #000000;
+  --accent-text: #ffffff;
+  --danger: #d92d20; /* rouge lisible en texte / bordure ET en bouton plein */
+  --danger-btn: #d92d20;
+  --danger-surface: #fef3f2;
+  --danger-border: #fda29b;
 
   /* Rayons cohérents */
   --r-sm: 10px;
@@ -42,13 +42,13 @@
   /* Contrôles tactiles */
   --control-h: 54px;
 
-  /* Focus (sur dark) : bordure grise nette + anneau discret */
-  --focus-border: #8a8f99;
-  --focus-ring: 0 0 0 3px rgba(255, 255, 255, 0.1);
+  /* Focus : bordure sombre nette + anneau discret */
+  --focus-border: #111113;
+  --focus-ring: 0 0 0 3px rgba(17, 17, 19, 0.08);
 
-  /* Ombres — discrètes */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.4);
+  /* Ombres — très légères, uniquement pour la hiérarchie */
+  --shadow-sm: 0 1px 2px rgba(16, 18, 20, 0.05);
+  --shadow-card: 0 1px 2px rgba(16, 18, 20, 0.04), 0 6px 16px rgba(16, 18, 20, 0.05);
 
   /* Transitions — extrêmement courtes */
   --t: 120ms ease;
@@ -291,10 +291,16 @@ body {
   width: 44px;
   height: 44px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-full);
   color: var(--text-2);
   cursor: pointer;
+  /* Bouton parfaitement net et opaque : aucun flou / effet verre, quel que
+     soit le fond derrière lui. La bordure + l'ombre légère le détachent
+     clairement du fond blanc général (pas de fond transparent/vitré). */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--shadow-sm);
   transition:
     background var(--t),
     color var(--t);
@@ -472,11 +478,11 @@ body {
 }
 
 /* =========================================================================
-   Écran résultat — fond DARK, la couleur de colonne devient un ACCENT.
+   Écran résultat — fond clair, la couleur de colonne devient un ACCENT.
    `--accent` est injecté en style inline par SearchResultView UNIQUEMENT
    quand une colonne existe ; sinon (cas PANNEAU + LOGEMENT) la propriété
    n'est pas surchargée et hérite du token neutre global défini dans :root
-   (aucune couleur de colonne n'est inventée — style dark neutre conservé).
+   (aucune couleur de colonne n'est inventée — style neutre conservé).
    ========================================================================= */
 
 .result {
@@ -506,7 +512,8 @@ body {
   word-break: break-word;
 }
 
-/* Carte de résultat : surface sombre distincte + bordure d'accent + halo discret. */
+/* Carte de résultat : surface légèrement grisée distincte du fond blanc,
+   bordure d'accent (couleur de colonne), ombre légère pour la hiérarchie. */
 .result-card {
   flex: 0 1 auto;
   margin: auto 0;
@@ -520,7 +527,7 @@ body {
   background: var(--surface-2);
   border: 2px solid var(--accent);
   border-radius: 28px;
-  box-shadow: 0 18px 48px -32px var(--accent);
+  box-shadow: var(--shadow-card);
 }
 
 .result-card-solo {
@@ -596,7 +603,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
 .hint {
@@ -865,7 +872,7 @@ select.input {
 .mode-toggle-btn.active {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-actions {
@@ -926,8 +933,8 @@ select.input {
 }
 
 .import-row-duplicate {
-  background: #2a2413;
-  border-color: #5c4f2b;
+  background: #fff8eb;
+  border-color: #f5d99b;
 }
 
 .import-row-line {

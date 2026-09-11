@@ -9,9 +9,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'assets', 'logo-source.png');
 const outDir = join(root, 'public');
 
-// Couleur de fond des icônes PWA : identique au thème dark de l'app
-// (voir --bg / theme_color / background_color).
-const BG = '#0f1113';
+// Couleur de fond des icônes PWA.
+const BG = '#68BD98';
 
 const logoBuffer = await readFile(src);
 await mkdir(outDir, { recursive: true });
