@@ -45,7 +45,14 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
   return (
     <div className="result">
-      <div className="result-name">{fullName(person)}</div>
+      <div className="result-header">
+        <div className="result-name">{fullName(person)}</div>
+        {/* Information de vérification visuelle uniquement — jamais
+            l'information principale pendant la tournée (voir carte
+            panneau/colonne/logement ci-dessous) : réutilise directement
+            `person.adresse` existant, aucune nouvelle donnée. */}
+        <p className="result-address">{person.adresse}</p>
+      </div>
 
       {person.reexpedition && (
         <div className="reexpedition-banner" role="status">

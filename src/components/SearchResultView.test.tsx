@@ -162,4 +162,111 @@ describe('SearchResultView', () => {
     screen.getByRole('button', { name: /apporter une précision/i }).click();
     expect(window.location.hash).toBe('#/database/edit/person-42');
   });
+
+  describe('adresse complète sous le nom', () => {
+    it("affiche person.adresse du bon destinataire, directement sous NOM Prénom", () => {
+      render(
+        <SearchResultView
+          person={person({ adresse: '35 Rue Claude Kogan', colonne: 5 })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('35 Rue Claude Kogan')).not.toBeNull();
+    });
+
+    it('adresse longue : affichée intégralement, sans troncature', () => {
+      const longue = '128 bis Avenue Maréchal Juin, Résidence Les Terrasses du Parc';
+      render(
+        <SearchResultView person={person({ adresse: longue, colonne: 5 })} onNewSearch={() => {}} />,
+      );
+      expect(screen.getByText(longue)).not.toBeNull();
+    });
+
+    it('ordre : NOM puis adresse, avant le bandeau réexpédition et la carte principale', () => {
+      render(
+        <SearchResultView
+          person={person({ adresse: '35 Rue Claude Kogan', colonne: 5, reexpedition: true })}
+          onNewSearch={() => {}}
+        />,
+      );
+      const container = document.querySelector('.result') as HTMLElement;
+      const text = container.textContent ?? '';
+      const iName = text.indexOf('DUPONT Jean');
+      const iAddress = text.indexOf('35 Rue Claude Kogan');
+      const iReexpedition = text.indexOf('RÉEXPÉDITION');
+      const iCard = text.indexOf('COLONNE');
+      expect(iName).toBeGreaterThanOrEqual(0);
+      expect(iName).toBeLessThan(iAddress);
+      expect(iAddress).toBeLessThan(iReexpedition);
+      expect(iAddress).toBeLessThan(iCard);
+    });
+
+    it('adresse + COLONNE : les deux informations coexistent, la carte reste visible', () => {
+      render(
+        <SearchResultView
+          person={person({ adresse: '35 Rue Claude Kogan', colonne: 4 })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('35 Rue Claude Kogan')).not.toBeNull();
+      expect(screen.getByText('COLONNE')).not.toBeNull();
+      expect(screen.getByText('4')).not.toBeNull();
+    });
+
+    it('adresse + PANNEAU + LOGEMENT 8407 : les deux informations coexistent', () => {
+      render(
+        <SearchResultView
+          person={person({
+            adresse: '35 Rue Claude Kogan',
+            colonne: null,
+            panneau: 7,
+            logement: '8407',
+          })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('35 Rue Claude Kogan')).not.toBeNull();
+      expect(screen.getByText('PANNEAU')).not.toBeNull();
+      expect(screen.getByText('LOGEMENT')).not.toBeNull();
+      expect(screen.getByText('8407')).not.toBeNull();
+    });
+
+    it('adresse + réexpédition + remarque : toutes les informations sont affichées ensemble', () => {
+      render(
+        <SearchResultView
+          person={person({
+            adresse: '35 Rue Claude Kogan',
+            colonne: 5,
+            reexpedition: true,
+            remarque: 'Boîte derrière la porte',
+          })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('35 Rue Claude Kogan')).not.toBeNull();
+      expect(screen.getByText('RÉEXPÉDITION')).not.toBeNull();
+      expect(screen.getByText('REMARQUE')).not.toBeNull();
+      expect(screen.getByText('Boîte derrière la porte')).not.toBeNull();
+    });
+
+    it('deux destinataires homonymes : chacun affiche sa propre adresse', () => {
+      const { unmount } = render(
+        <SearchResultView
+          person={person({ id: 'p1', adresse: '12 Rue Victor Hugo', colonne: 5 })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('12 Rue Victor Hugo')).not.toBeNull();
+      unmount();
+
+      render(
+        <SearchResultView
+          person={person({ id: 'p2', adresse: '4 Avenue de Paris', colonne: 2 })}
+          onNewSearch={() => {}}
+        />,
+      );
+      expect(screen.getByText('4 Avenue de Paris')).not.toBeNull();
+      expect(screen.queryByText('12 Rue Victor Hugo')).toBeNull();
+    });
+  });
 });

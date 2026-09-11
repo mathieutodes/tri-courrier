@@ -652,14 +652,41 @@ body {
   gap: clamp(var(--s-4), 3.5vh, var(--s-5));
 }
 
-.result-name {
+/* Regroupe NOM + adresse : les deux restent visuellement collés l'un à
+   l'autre (petit `gap` interne dédié), tandis que l'espacement standard vers
+   le bandeau réexpédition / la carte d'emplacement suivante reste géré par
+   le `gap` de `.result` — aucune valeur négative fragile à recalculer. */
+.result-header {
   flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-name {
   width: 100%;
   font-size: clamp(1.7rem, 7.5vw, 2.5rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
   color: var(--text);
+  word-break: break-word;
+}
+
+/* Adresse : information de VÉRIFICATION visuelle uniquement — jamais aussi
+   importante que le nom ni que le panneau/colonne/logement pendant la
+   tournée. Volontairement discrète : petite taille, gris/bleu secondaire,
+   sans carte ni badge ni couleur vive. Peut tenir sur 2 lignes sans jamais
+   déborder horizontalement. */
+.result-address {
+  margin: 0;
+  width: 100%;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
