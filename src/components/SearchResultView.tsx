@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { navigateToEditPerson } from '../App';
 import type { Person } from '../types/person';
-import { MailboxIcon, NoteIcon, PencilIcon, PersonIcon, WarningIcon } from './icons';
+import { BackIcon, MailboxIcon, NoteIcon, PencilIcon, PersonIcon, WarningIcon } from './icons';
 
 // Les chiffres PANNEAU/COLONNE/LOGEMENT suivent tous le même bleu iOS (voir
 // section « couleurs » du design system) — l'ancienne palette de 16 couleurs
@@ -48,6 +48,15 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
   return (
     <div className="result">
+      {/* Navigation "‹ Recherche" : réutilise EXACTEMENT `onNewSearch` (la
+          même action que l'ancien bouton NOUVELLE RECHERCHE, supprimé plus
+          bas) — aucune nouvelle fonctionnalité, uniquement un point d'entrée
+          différent vers le même comportement. */}
+      <button type="button" className="result-nav-back" onClick={onNewSearch}>
+        <BackIcon size={16} />
+        <span>Recherche</span>
+      </button>
+
       {/* CARTE IDENTITÉ : avatar rond sur petite surface bleu pâle à gauche,
           NOM Prénom + adresse à droite. `min-width: 0` (voir CSS) laisse un
           nom long (ex. « KHATCHADOURIAN ») se répartir proprement sur
@@ -68,8 +77,8 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
       {person.reexpedition && (
         <div className="reexpedition-banner card-hero" role="status">
-          <span className="avatar avatar-red reexpedition-banner-icon" aria-hidden="true">
-            <WarningIcon size={18} />
+          <span className="avatar avatar-red avatar-lg reexpedition-banner-icon" aria-hidden="true">
+            <WarningIcon size={21} />
           </span>
           <div className="reexpedition-banner-text">
             <span className="reexpedition-banner-title">RÉEXPÉDITION</span>
@@ -85,8 +94,8 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
           la hauteur ne varie (quasiment) pas selon 1 ou 2 informations
           affichées (voir CSS : plus de mode "solo" agrandi). */}
       <div className="result-card card card-hero" style={cardStyle}>
-        <span className="avatar avatar-blue result-card-icon" aria-hidden="true">
-          <MailboxIcon size={20} />
+        <span className="avatar avatar-blue avatar-lg result-card-icon" aria-hidden="true">
+          <MailboxIcon size={24} />
         </span>
         <div className="result-card-figures">
           {showPanneauFigure && (
@@ -119,8 +128,8 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
       {person.remarque !== null && person.remarque.trim() !== '' && (
         <div className="remarque-block card card-hero">
-          <span className="avatar avatar-blue avatar-sm remarque-icon" aria-hidden="true">
-            <NoteIcon size={15} />
+          <span className="avatar avatar-blue avatar-lg remarque-icon" aria-hidden="true">
+            <NoteIcon size={20} />
           </span>
           <div className="remarque-body">
             <span className="remarque-label">REMARQUE</span>
@@ -129,7 +138,10 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         </div>
       )}
 
-      {/* APPORTER UNE PRÉCISION : action PRIMAIRE. */}
+      {/* APPORTER UNE PRÉCISION : action PRIMAIRE — seule action de bas
+          d'écran désormais (NOUVELLE RECHERCHE est remplacée par la
+          navigation "‹ Recherche" en haut, qui déclenche exactement le même
+          `onNewSearch` : plus de deux actions identiques). */}
       <button
         type="button"
         className="btn btn-primary btn-block result-secondary"
@@ -137,16 +149,6 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       >
         <PencilIcon size={18} />
         APPORTER UNE PRÉCISION
-      </button>
-
-      {/* NOUVELLE RECHERCHE : action SECONDAIRE — jamais deux gros boutons
-          bleus identiques l'un après l'autre. */}
-      <button
-        type="button"
-        className="btn btn-secondary btn-block result-cta"
-        onClick={onNewSearch}
-      >
-        NOUVELLE RECHERCHE
       </button>
     </div>
   );

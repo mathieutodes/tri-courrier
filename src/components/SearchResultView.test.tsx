@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import SearchResultView from './SearchResultView';
 import type { Person } from '../types/person';
 
@@ -78,10 +78,20 @@ describe('SearchResultView', () => {
     expect(screen.getByText('314')).not.toBeNull();
   });
 
-  it('affiche le nom complet et un bouton NOUVELLE RECHERCHE', () => {
+  it('affiche le nom complet et la navigation "‹ Recherche" en haut', () => {
     render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
     expect(screen.getByText('DUPONT Jean')).not.toBeNull();
-    expect(screen.getByRole('button', { name: /nouvelle recherche/i })).not.toBeNull();
+    expect(screen.getByRole('button', { name: /recherche/i })).not.toBeNull();
+    // Un seul déclencheur de nouvelle recherche : plus de gros bouton
+    // NOUVELLE RECHERCHE en bas d'écran (remplacé par la navigation du haut).
+    expect(screen.queryByRole('button', { name: /nouvelle recherche/i })).toBeNull();
+  });
+
+  it('le bouton "‹ Recherche" déclenche exactement `onNewSearch` (même action que l’ancien bouton)', () => {
+    const onNewSearch = vi.fn();
+    render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={onNewSearch} />);
+    fireEvent.click(screen.getByRole('button', { name: /recherche/i }));
+    expect(onNewSearch).toHaveBeenCalledTimes(1);
   });
 
   it('reexpedition === true : affiche le bandeau d’avertissement', () => {
