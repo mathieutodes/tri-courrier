@@ -10,8 +10,8 @@ const DB_NAME = 'tri-courrier';
 // v1 : store `persons`
 // v2 : ajout ADDITIF du store `rues` (aucune donnée existante n'est touchée)
 // Le champ `logement` (et `colonne` devenu facultatif), puis `reexpedition`,
-// n'ajoutent ni store ni index : IndexedDB n'a pas de schéma par champ, donc
-// aucune v3 n'est requise.
+// puis `remarque`, n'ajoutent ni store ni index : IndexedDB n'a pas de schéma
+// par champ, donc aucune v3 n'est requise.
 const DB_VERSION = 2;
 const STORE = 'persons';
 const RUE_STORE = 'rues';
@@ -20,19 +20,22 @@ const RUE_STORE = 'rues';
  * Représentation stockée d'une personne : on ajoute un champ normalisé pour
  * accélérer la recherche. Ce champ n'est pas exposé par l'API publique.
  * Les anciennes entrées n'ont ni `numeroRue`, ni `rueId`, ni `logement`, ni
- * `reexpedition` : ils sont optionnels ici et normalisés en lecture
- * (`null`, ou `false` pour `reexpedition`). Chaque ajout de champ facultatif
- * est une simple évolution de la FORME des objets stockés — IndexedDB
- * n'impose aucun schéma par champ, donc aucune migration de version n'est
- * nécessaire : les anciennes fiches continuent de se lire exactement comme
- * avant, avec `logement: null` et `reexpedition: false`.
+ * `reexpedition`, ni `remarque` : ils sont optionnels ici et normalisés en
+ * lecture (`null`, ou `false` pour `reexpedition`). Chaque ajout de champ
+ * facultatif est une simple évolution de la FORME des objets stockés —
+ * IndexedDB n'impose aucun schéma par champ, donc aucune migration de
+ * version n'est nécessaire : les anciennes fiches continuent de se lire
+ * exactement comme avant, avec `logement: null`, `reexpedition: false` et
+ * `remarque: null`.
  */
-interface StoredPerson extends Omit<Person, 'numeroRue' | 'rueId' | 'logement' | 'reexpedition'> {
+interface StoredPerson
+  extends Omit<Person, 'numeroRue' | 'rueId' | 'logement' | 'reexpedition' | 'remarque'> {
   nomNormalise: string;
   numeroRue?: number | null;
   rueId?: string | null;
   logement?: string | null;
   reexpedition?: boolean;
+  remarque?: string | null;
 }
 
 interface StoredRue extends Rue {
@@ -103,6 +106,7 @@ function fromStored(stored: StoredPerson): Person {
     panneau: rest.panneau ?? null,
     logement: rest.logement ?? null,
     reexpedition: rest.reexpedition ?? false,
+    remarque: rest.remarque ?? null,
   };
 }
 

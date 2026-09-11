@@ -5,6 +5,7 @@ import {
   parseNumero,
   parsePanneau,
   parseReexpedition,
+  parseRemarque,
   validatePerson,
   validatePersonForm,
 } from './validation';
@@ -93,6 +94,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
     panneau: '1',
     logement: '',
     reexpedition: '',
+    remarque: '',
   };
 
   it('1. colonne uniquement : valide (numeroRue / rueId / logement null)', () => {
@@ -108,6 +110,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
       panneau: null,
       logement: null,
       reexpedition: false,
+      remarque: null,
     });
   });
 
@@ -132,6 +135,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
       panneau: 2,
       logement: '314',
       reexpedition: false,
+      remarque: null,
     });
   });
 
@@ -187,6 +191,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
     panneau: '1',
     logement: '',
     reexpedition: false,
+    remarque: '',
   };
 
   it('mode colonne : construit l’adresse et renseigne numeroRue / rueId, logement null', () => {
@@ -202,6 +207,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
       panneau: 1,
       logement: null,
       reexpedition: false,
+      remarque: null,
     });
   });
 
@@ -238,6 +244,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
       panneau: 2,
       logement: '314',
       reexpedition: false,
+      remarque: null,
     });
   });
 
@@ -288,6 +295,55 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
     const r = validatePersonForm({ ...base, reexpedition: false }, rues);
     expect(r.valid).toBe(true);
     expect(r.value?.reexpedition).toBe(false);
+  });
+
+  it('création avec remarque : conservée telle quelle (espaces début/fin retirés)', () => {
+    const r = validatePersonForm({ ...base, remarque: '  Boîte au nom de MARTIN  ' }, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value?.remarque).toBe('Boîte au nom de MARTIN');
+  });
+
+  it('modification d’une remarque existante', () => {
+    const r = validatePersonForm({ ...base, remarque: 'BAL derrière la porte' }, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value?.remarque).toBe('BAL derrière la porte');
+  });
+
+  it('suppression d’une remarque (champ vidé) -> null', () => {
+    const r = validatePersonForm({ ...base, remarque: '' }, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value?.remarque).toBeNull();
+  });
+
+  it('ne transforme jamais la remarque en majuscules', () => {
+    const r = validatePersonForm({ ...base, remarque: 'Nom effacé sur la boîte' }, rues);
+    expect(r.value?.remarque).toBe('Nom effacé sur la boîte');
+  });
+});
+
+describe('parseRemarque', () => {
+  it('supprime uniquement les espaces au début/à la fin', () => {
+    expect(parseRemarque('  Boîte au nom de MARTIN  ')).toBe('Boîte au nom de MARTIN');
+  });
+
+  it('conserve les espaces/retours à la ligne internes (contrairement à cleanStored)', () => {
+    expect(parseRemarque('BAL  derrière\nla porte')).toBe('BAL  derrière\nla porte');
+  });
+
+  it('vide ou absente -> null', () => {
+    expect(parseRemarque('')).toBeNull();
+    expect(parseRemarque('   ')).toBeNull();
+    expect(parseRemarque(undefined)).toBeNull();
+  });
+
+  it('ne modifie jamais la casse', () => {
+    expect(parseRemarque('Nom effacé sur la boîte')).toBe('Nom effacé sur la boîte');
+  });
+
+  it('conserve accents et apostrophes', () => {
+    expect(parseRemarque("BAL derrière la porte, à l'étage")).toBe(
+      "BAL derrière la porte, à l'étage",
+    );
   });
 });
 

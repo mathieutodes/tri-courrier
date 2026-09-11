@@ -638,6 +638,48 @@ body {
   line-height: 1.35;
 }
 
+/* Bloc REMARQUE : sous le panneau/colonne/logement, sobre et lisible, thème
+   clair (texte sombre sur surface légèrement grisée). Le retour à la ligne
+   automatique + `overflow-wrap` empêchent tout débordement horizontal, y
+   compris pour un mot long sans espace, sur iPhone 375px. */
+.remarque-block {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 440px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  text-align: left;
+}
+
+.remarque-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.remarque-text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.result-secondary {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 440px;
+}
+
 /* =========================================================================
    Base de données
    ========================================================================= */
@@ -770,6 +812,19 @@ body {
   color: #7a4e00;
 }
 
+/* Repère discret liste Base de données : destinataire avec remarque non vide
+   (jamais le texte complet — juste le repère, pour ne pas surcharger la liste). */
+.remarque-badge {
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+}
+
 .row-actions {
   display: flex;
   gap: var(--s-3);
@@ -887,6 +942,18 @@ body {
 .input::placeholder {
   color: var(--text-3);
   font-weight: 400;
+}
+
+/* Textarea (Remarque) : multi-ligne, hauteur confortable au pouce sur iPhone,
+   redimensionnable verticalement uniquement. */
+.textarea {
+  min-height: 96px;
+  height: auto;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  line-height: 1.4;
+  font-family: inherit;
+  resize: vertical;
 }
 
 .input:focus {

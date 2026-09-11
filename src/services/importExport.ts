@@ -8,12 +8,25 @@ import { parseColonne, parsePanneau, validatePerson } from '../utils/validation'
  * Nouveau format exporté. L'import reste compatible avec l'ancien ordre
  * (`nom,prenom,adresse,colonne,panneau`) et tout ordre de colonnes : le CSV
  * est lu par NOM d'en-tête (Papa.parse `header: true`), jamais par position.
- * Un ancien fichier sans colonne `logement` (ou `reexpedition`) importe donc
- * exactement comme avant, avec `logement = null` / `reexpedition = false`.
+ * Un ancien fichier sans colonne `logement`/`reexpedition`/`remarque` importe
+ * donc exactement comme avant, avec `logement = null` / `reexpedition = false`
+ * / `remarque = null`. Papa.parse gère nativement l'échappement CSV standard
+ * (virgules, guillemets, retours à la ligne DANS une cellule) : aucun parsing
+ * naïf par `split(',')` n'est utilisé, y compris pour `remarque` qui peut
+ * contenir ces trois cas.
  */
-export const CSV_HEADER = 'nom,prenom,adresse,panneau,colonne,logement,reexpedition';
+export const CSV_HEADER = 'nom,prenom,adresse,panneau,colonne,logement,reexpedition,remarque';
 
-const FIELDS = ['nom', 'prenom', 'adresse', 'colonne', 'panneau', 'logement', 'reexpedition'] as const;
+const FIELDS = [
+  'nom',
+  'prenom',
+  'adresse',
+  'colonne',
+  'panneau',
+  'logement',
+  'reexpedition',
+  'remarque',
+] as const;
 type CsvField = (typeof FIELDS)[number];
 
 export type ImportStatus = 'valid' | 'invalid' | 'duplicate';
@@ -30,6 +43,7 @@ export interface ImportRow {
     panneau: string;
     logement: string;
     reexpedition: string;
+    remarque: string;
   };
   value?: PersonInput;
 }
@@ -77,8 +91,10 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       logement: get('logement'),
       // Colonne absente d'un ancien CSV : `record['reexpedition']` vaut alors
       // `undefined`, et `get()` le convertit en chaîne vide -> `false` via
-      // `parseReexpedition` (voir validatePerson ci-dessous).
+      // `parseReexpedition` (voir validatePerson ci-dessous). Même principe
+      // pour `remarque` -> `null` via `parseRemarque`.
       reexpedition: get('reexpedition'),
+      remarque: get('remarque'),
     };
 
     const result = validatePerson({
@@ -89,6 +105,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       panneau: display.panneau,
       logement: display.logement,
       reexpedition: display.reexpedition,
+      remarque: display.remarque,
     });
 
     const line = index + 2; // +1 en-tête, +1 pour un index humain
@@ -150,6 +167,7 @@ export function personsToCSV(persons: Person[]): string {
         p.colonne === null ? '' : String(p.colonne),
         csvCell(p.logement ?? ''),
         p.reexpedition ? 'oui' : '',
+        csvCell(p.remarque ?? ''),
       ].join(','),
     );
   }
@@ -166,6 +184,7 @@ export function personsToJSON(persons: Person[]): string {
     panneau: p.panneau,
     logement: p.logement,
     reexpedition: p.reexpedition,
+    remarque: p.remarque,
   }));
   return JSON.stringify(clean, null, 2);
 }

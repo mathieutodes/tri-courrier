@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { navigateToEditPerson } from '../App';
 import type { Person } from '../types/person';
 import { getColumnAccent } from '../utils/columnColors';
 import { WarningIcon } from './icons';
@@ -80,6 +81,21 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
           </div>
         )}
       </div>
+
+      {person.remarque !== null && person.remarque.trim() !== '' && (
+        <div className="remarque-block">
+          <span className="remarque-label">REMARQUE</span>
+          <p className="remarque-text">{person.remarque}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="btn btn-secondary btn-block result-secondary"
+        onClick={() => navigateToEditPerson(person.id)}
+      >
+        APPORTER UNE PRÉCISION
+      </button>
 
       <button
         type="button"

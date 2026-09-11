@@ -14,6 +14,7 @@ function person(id: string, nom: string, adresse: string, prenom: string | null 
     panneau: null,
     logement: null,
     reexpedition: false,
+    remarque: null,
   };
 }
 

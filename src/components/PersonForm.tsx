@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Person, PersonInput } from '../types/person';
 import type { Rue } from '../types/rue';
 import { decomposeAdresse } from '../utils/adresse';
@@ -13,6 +13,14 @@ interface Props {
   rues: Rue[];
   onSubmit: (value: PersonInput) => void;
   onCancel: () => void;
+  /**
+   * Place immédiatement le curseur (et fait défiler jusqu'au) champ Remarque
+   * au montage — utilisé par le bouton « APPORTER UNE PRÉCISION » de l'écran
+   * résultat. Best-effort : Safari/iOS peut refuser d'ouvrir le clavier pour
+   * un focus programmatique trop éloigné du geste utilisateur d'origine ; on
+   * ne tente aucun contournement agressif dans ce cas.
+   */
+  autoFocusRemarque?: boolean;
 }
 
 function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
@@ -45,12 +53,38 @@ function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
     // actuelle (les anciennes fiches sans ce champ valent `false`, voir
     // `fromStored` dans src/db/database.ts).
     reexpedition: person?.reexpedition ?? false,
+    // Textarea libre : la remarque existante est affichée telle quelle
+    // (aucune transformation), vide pour une nouvelle fiche.
+    remarque: person?.remarque ?? '',
   };
 }
 
-export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props) {
+export default function PersonForm({
+  initial,
+  rues,
+  onSubmit,
+  onCancel,
+  autoFocusRemarque = false,
+}: Props) {
   const [fields, setFields] = useState<RawPersonForm>(() => toRawForm(initial, rues));
   const [errors, setErrors] = useState<PersonFormErrors>({});
+  const remarqueRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!autoFocusRemarque) return;
+    // Best-effort, déclenché par l'intention utilisateur du clic « APPORTER
+    // UNE PRÉCISION » (voir SearchResultView) : on amène le champ dans la
+    // zone visible et on lui donne le focus. Aucune relance/hack en cas
+    // d'échec (Safari peut légitimement refuser d'ouvrir le clavier ici).
+    // `scrollIntoView` n'existe pas dans tous les environnements (ex. jsdom en
+    // test) : accès défensif via `?.` sur la méthode elle-même, pas seulement
+    // sur la ref.
+    remarqueRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    remarqueRef.current?.focus();
+    // Volontairement `[]` : ce focus initial ne doit se déclencher qu'une
+    // fois au montage, jamais se répéter si `autoFocusRemarque` était déjà
+    // vrai (il ne change pas après coup pour une instance de formulaire donnée).
+  }, []);
 
   // Adresse actuelle non retrouvée automatiquement : on la montre pour info.
   const legacyAdresse =
@@ -238,6 +272,19 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
           onChange={(e) => setReexpedition(e.target.checked)}
         />
         <span>Réexpédition</span>
+      </label>
+
+      <label className="field">
+        <span className="field-label">Remarque</span>
+        <textarea
+          ref={remarqueRef}
+          className="input textarea"
+          rows={3}
+          placeholder="ex. Boîte au nom de MARTIN, BAL derrière la porte…"
+          value={fields.remarque}
+          onChange={(e) => set('remarque', e.target.value)}
+        />
+        <span className="field-hint">Facultatif. Visible sur l'écran résultat.</span>
       </label>
 
       <div className="form-actions">

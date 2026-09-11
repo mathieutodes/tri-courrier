@@ -137,6 +137,7 @@ describe('personsToCSV — export', () => {
       panneau: 1,
       logement: null,
       reexpedition: true,
+      remarque: null,
     },
     {
       id: '2',
@@ -149,25 +150,28 @@ describe('personsToCSV — export', () => {
       panneau: 4,
       logement: '314',
       reexpedition: false,
+      remarque: 'Boîte au nom de MARTIN',
     },
   ];
 
-  it('8. nouvel en-tête nom,prenom,adresse,panneau,colonne,logement,reexpedition', () => {
-    expect(CSV_HEADER).toBe('nom,prenom,adresse,panneau,colonne,logement,reexpedition');
+  it('8. nouvel en-tête nom,prenom,adresse,panneau,colonne,logement,reexpedition,remarque', () => {
+    expect(CSV_HEADER).toBe(
+      'nom,prenom,adresse,panneau,colonne,logement,reexpedition,remarque',
+    );
 
     const lines = personsToCSV(persons).trim().split('\r\n');
     expect(lines[0]).toBe(CSV_HEADER);
   });
 
-  it('reexpedition = true -> "oui" ; reexpedition = false -> cellule vide', () => {
+  it('reexpedition = true -> "oui" ; reexpedition = false -> cellule vide ; remarque exportée', () => {
     const lines = personsToCSV(persons).trim().split('\r\n');
-    expect(lines[1]).toBe('DUPONT,Jean,12 Rue Victor Hugo,1,5,,oui');
-    expect(lines[2]).toBe('LEROY,,3 Rue des Tilleuls,4,,314,');
+    expect(lines[1]).toBe('DUPONT,Jean,12 Rue Victor Hugo,1,5,,oui,');
+    expect(lines[2]).toBe('LEROY,,3 Rue des Tilleuls,4,,314,,Boîte au nom de MARTIN');
   });
 });
 
 describe('personsToJSON — export', () => {
-  it('conserve reexpedition dans l’export JSON', () => {
+  it('conserve reexpedition et remarque dans l’export JSON', () => {
     const persons: Person[] = [
       {
         id: '1',
@@ -180,9 +184,118 @@ describe('personsToJSON — export', () => {
         panneau: 1,
         logement: null,
         reexpedition: true,
+        remarque: 'BAL derrière la porte',
       },
     ];
     const parsed = JSON.parse(personsToJSON(persons));
     expect(parsed[0].reexpedition).toBe(true);
+    expect(parsed[0].remarque).toBe('BAL derrière la porte');
+  });
+});
+
+describe('remarque — CSV import/export (échappement correct, pas de split naïf)', () => {
+  it('ancien CSV sans colonne "remarque" -> null', async () => {
+    const csv = 'nom,prenom,adresse,colonne,panneau\nDUPONT,Jean,12 Rue Victor Hugo,5,1\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBeNull();
+  });
+
+  it('cellule remarque vide -> null', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,remarque\nDUPONT,Jean,12 Rue Victor Hugo,5,1,\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBeNull();
+  });
+
+  it('export puis import d’une remarque simple : contenu conservé', async () => {
+    const persons: Person[] = [
+      {
+        id: '1',
+        nom: 'DUPONT',
+        prenom: 'Jean',
+        adresse: '12 Rue Victor Hugo',
+        numeroRue: 12,
+        rueId: 'r1',
+        colonne: 5,
+        panneau: 1,
+        logement: null,
+        reexpedition: false,
+        remarque: 'Boîte au nom de MARTIN',
+      },
+    ];
+    const csv = personsToCSV(persons);
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBe('Boîte au nom de MARTIN');
+  });
+
+  it('remarque contenant une virgule : échappée à l’export, restituée à l’import', async () => {
+    const persons: Person[] = [
+      {
+        id: '1',
+        nom: 'DUPONT',
+        prenom: 'Jean',
+        adresse: '12 Rue Victor Hugo',
+        numeroRue: 12,
+        rueId: 'r1',
+        colonne: 5,
+        panneau: 1,
+        logement: null,
+        reexpedition: false,
+        remarque: 'BAL au fond, à droite',
+      },
+    ];
+    const csv = personsToCSV(persons);
+    // La cellule contenant une virgule doit être entourée de guillemets.
+    expect(csv).toContain('"BAL au fond, à droite"');
+
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBe('BAL au fond, à droite');
+  });
+
+  it('remarque contenant des guillemets : échappée à l’export, restituée à l’import', async () => {
+    const persons: Person[] = [
+      {
+        id: '1',
+        nom: 'DUPONT',
+        prenom: 'Jean',
+        adresse: '12 Rue Victor Hugo',
+        numeroRue: 12,
+        rueId: 'r1',
+        colonne: 5,
+        panneau: 1,
+        logement: null,
+        reexpedition: false,
+        remarque: 'Boîte marquée "DUPONT"',
+      },
+    ];
+    const csv = personsToCSV(persons);
+    // Guillemets internes doublés, cellule entourée de guillemets.
+    expect(csv).toContain('"Boîte marquée ""DUPONT"""');
+
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBe('Boîte marquée "DUPONT"');
+  });
+
+  it('remarque contenant un retour à la ligne : échappée à l’export, restituée à l’import', async () => {
+    const persons: Person[] = [
+      {
+        id: '1',
+        nom: 'DUPONT',
+        prenom: 'Jean',
+        adresse: '12 Rue Victor Hugo',
+        numeroRue: 12,
+        rueId: 'r1',
+        colonne: 5,
+        panneau: 1,
+        logement: null,
+        reexpedition: false,
+        remarque: 'BAL derrière la porte\nSonner deux fois',
+      },
+    ];
+    const csv = personsToCSV(persons);
+    expect(csv).toContain('"BAL derrière la porte\nSonner deux fois"');
+
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].remarque).toBe('BAL derrière la porte\nSonner deux fois');
   });
 });

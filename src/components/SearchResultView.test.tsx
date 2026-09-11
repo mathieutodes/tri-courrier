@@ -16,12 +16,14 @@ function person(overrides: Partial<Person>): Person {
     panneau: null,
     logement: null,
     reexpedition: false,
+    remarque: null,
     ...overrides,
   };
 }
 
 afterEach(() => {
   cleanup();
+  window.location.hash = '';
 });
 
 describe('SearchResultView', () => {
@@ -104,5 +106,60 @@ describe('SearchResultView', () => {
       />,
     );
     expect(screen.queryByText('RÉEXPÉDITION')).toBeNull();
+  });
+
+  it('remarque absente : aucun bloc REMARQUE affiché', () => {
+    render(
+      <SearchResultView person={person({ colonne: 5, remarque: null })} onNewSearch={() => {}} />,
+    );
+    expect(screen.queryByText('REMARQUE')).toBeNull();
+  });
+
+  it('remarque vide (chaîne blanche) : aucun bloc REMARQUE affiché', () => {
+    render(
+      <SearchResultView person={person({ colonne: 5, remarque: '   ' })} onNewSearch={() => {}} />,
+    );
+    expect(screen.queryByText('REMARQUE')).toBeNull();
+  });
+
+  it('remarque présente : bloc REMARQUE affiché sous le panneau/colonne/logement', () => {
+    render(
+      <SearchResultView
+        person={person({ colonne: 5, remarque: 'Boîte au nom de MARTIN' })}
+        onNewSearch={() => {}}
+      />,
+    );
+    expect(screen.getByText('REMARQUE')).not.toBeNull();
+    expect(screen.getByText('Boîte au nom de MARTIN')).not.toBeNull();
+    // Le résultat principal reste visible.
+    expect(screen.getByText('COLONNE')).not.toBeNull();
+    expect(screen.getByText('5')).not.toBeNull();
+  });
+
+  it('réexpédition + remarque : les deux sont affichés en même temps', () => {
+    render(
+      <SearchResultView
+        person={person({ colonne: 5, reexpedition: true, remarque: 'BAL derrière la porte' })}
+        onNewSearch={() => {}}
+      />,
+    );
+    expect(screen.getByText('RÉEXPÉDITION')).not.toBeNull();
+    expect(screen.getByText('REMARQUE')).not.toBeNull();
+    expect(screen.getByText('BAL derrière la porte')).not.toBeNull();
+  });
+
+  it('le bouton APPORTER UNE PRÉCISION est toujours disponible, même sans remarque', () => {
+    render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+    expect(
+      screen.getByRole('button', { name: /apporter une précision/i }),
+    ).not.toBeNull();
+  });
+
+  it('APPORTER UNE PRÉCISION cible le bon ID (navigation par ID stable, pas par nom)', () => {
+    render(
+      <SearchResultView person={person({ id: 'person-42', colonne: 5 })} onNewSearch={() => {}} />,
+    );
+    screen.getByRole('button', { name: /apporter une précision/i }).click();
+    expect(window.location.hash).toBe('#/database/edit/person-42');
   });
 });

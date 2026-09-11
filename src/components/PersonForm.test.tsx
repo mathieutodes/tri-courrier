@@ -19,6 +19,7 @@ function existingPerson(overrides: Partial<Person>): Person {
     panneau: 4,
     logement: '314',
     reexpedition: false,
+    remarque: null,
     ...overrides,
   };
 }
@@ -167,5 +168,125 @@ describe('PersonForm', () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].reexpedition).toBe(false);
+  });
+
+  it('nouvelle fiche : le champ Remarque est vide par défaut', () => {
+    render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+    expect((screen.getByLabelText(/remarque/i) as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('édition : la remarque existante est affichée dans la textarea', () => {
+    render(
+      <PersonForm
+        initial={existingPerson({ remarque: 'BAL derrière la porte' })}
+        rues={rues}
+        onSubmit={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect((screen.getByLabelText(/remarque/i) as HTMLTextAreaElement).value).toBe(
+      'BAL derrière la porte',
+    );
+  });
+
+  it('création avec remarque : transmise (espaces début/fin retirés)', () => {
+    const onSubmit = vi.fn();
+    render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/^nom/i), { target: { value: 'DUPONT' } });
+    fireEvent.change(screen.getByLabelText(/numéro \*/i), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText(/^rue/i), { target: { value: 'r1' } });
+    fireEvent.change(screen.getByLabelText(/colonne \*/i), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText(/remarque/i), {
+      target: { value: '  Boîte au nom de MARTIN  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].remarque).toBe('Boîte au nom de MARTIN');
+  });
+
+  it('modification d’une remarque existante', () => {
+    const onSubmit = vi.fn();
+    render(
+      <PersonForm
+        initial={existingPerson({ remarque: 'Ancienne remarque' })}
+        rues={rues}
+        onSubmit={onSubmit}
+        onCancel={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/remarque/i), {
+      target: { value: 'Nouvelle remarque' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].remarque).toBe('Nouvelle remarque');
+  });
+
+  it('suppression d’une remarque (textarea vidée) -> remarque devient null', () => {
+    const onSubmit = vi.fn();
+    render(
+      <PersonForm
+        initial={existingPerson({ remarque: 'À supprimer' })}
+        rues={rues}
+        onSubmit={onSubmit}
+        onCancel={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/remarque/i), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].remarque).toBeNull();
+  });
+
+  it('ne modifie pas les autres champs de la fiche en ne touchant que la remarque', () => {
+    const onSubmit = vi.fn();
+    render(
+      <PersonForm
+        initial={existingPerson({ colonne: 5, panneau: null, logement: null })}
+        rues={rues}
+        onSubmit={onSubmit}
+        onCancel={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/remarque/i), { target: { value: 'Une précision' } });
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    const value = onSubmit.mock.calls[0][0];
+    expect(value.nom).toBe('LEROY');
+    expect(value.prenom).toBe('Camille');
+    expect(value.colonne).toBe(5);
+    expect(value.remarque).toBe('Une précision');
+  });
+
+  it('autoFocusRemarque : place le focus dans la textarea Remarque au montage', () => {
+    render(
+      <PersonForm
+        initial={existingPerson({})}
+        rues={rues}
+        onSubmit={() => {}}
+        onCancel={() => {}}
+        autoFocusRemarque
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByLabelText(/remarque/i));
+  });
+
+  it('sans autoFocusRemarque, le focus n’est pas forcé dans la textarea', () => {
+    render(
+      <PersonForm
+        initial={existingPerson({})}
+        rues={rues}
+        onSubmit={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(document.activeElement).not.toBe(screen.getByLabelText(/remarque/i));
   });
 });

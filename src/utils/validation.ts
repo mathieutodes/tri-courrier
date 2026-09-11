@@ -13,6 +13,7 @@ export interface RawPersonFields {
   panneau: string;
   logement: string;
   reexpedition: string;
+  remarque: string;
 }
 
 export type ValidationErrors = Partial<Record<keyof RawPersonFields, string>>;
@@ -41,6 +42,8 @@ export interface RawPersonForm {
   logement: string;
   /** Case à cocher « Réexpédition » : valeur booléenne directe (pas de parsing texte). */
   reexpedition: boolean;
+  /** Note libre facultative. Texte brut de la textarea (non encore recadré). */
+  remarque: string;
 }
 
 export type PersonFormErrors = Partial<Record<keyof RawPersonForm, string>>;
@@ -110,6 +113,18 @@ export function parseReexpedition(raw: string | undefined): boolean {
 }
 
 /**
+ * Remarque libre : seuls les espaces/retours à la ligne superflus en DÉBUT et
+ * FIN sont supprimés (`trim()`). Contrairement à `cleanStored`, les espaces
+ * et sauts de ligne INTERNES sont conservés tels quels — c'est une note libre
+ * multi-ligne, pas un champ d'identité. Jamais mise en majuscules : la casse
+ * saisie par l'utilisateur est conservée. Vide (ou absente) -> `null`.
+ */
+export function parseRemarque(raw: string | undefined): string | null {
+  const trimmed = (raw ?? '').trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
  * Règle de localisation minimale, commune au CSV et au formulaire manuel :
  * - colonne seule                -> OK
  * - panneau + colonne            -> OK
@@ -176,6 +191,7 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
   const prenomClean = cleanStored(fields.prenom);
   const prenom = prenomClean === '' ? null : prenomClean;
   const reexpedition = parseReexpedition(fields.reexpedition);
+  const remarque = parseRemarque(fields.remarque);
 
   const valid = Object.keys(errors).length === 0;
   if (!valid) return { valid, errors };
@@ -193,6 +209,7 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
       panneau: panneau.value,
       logement,
       reexpedition,
+      remarque,
     },
   };
 }
@@ -261,6 +278,7 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
       panneau: panneau.value,
       logement,
       reexpedition: fields.reexpedition,
+      remarque: parseRemarque(fields.remarque),
     },
   };
 }

@@ -64,8 +64,52 @@ describe('Compatibilité ascendante — fiches enregistrées avant le champ loge
         panneau: 3,
         logement: null,
         reexpedition: false,
+        remarque: null,
       },
     ]);
+  });
+
+  it('une fiche ancienne sans champ remarque est lue avec remarque = null', async () => {
+    stores().persons.set('legacy-remarque', {
+      id: 'legacy-remarque',
+      nom: 'SANSREMARQUE',
+      prenom: null,
+      adresse: '2 Rue Ancienne',
+      colonne: 3,
+      panneau: null,
+      nomNormalise: 'sansremarque',
+      // Pas de champ `remarque` du tout dans l'objet stocké.
+    });
+
+    const [person] = await getAllPersons();
+    expect(person.remarque).toBeNull();
+  });
+
+  it('sauvegarde une remarque, puis modification, puis suppression -> null', async () => {
+    stores().persons.set('legacy-4', {
+      id: 'legacy-4',
+      nom: 'QUATRIEME',
+      prenom: null,
+      adresse: '9 Rue Z',
+      colonne: 1,
+      panneau: null,
+      nomNormalise: 'quatrieme',
+    });
+
+    const [before] = await getAllPersons();
+    expect(before.remarque).toBeNull();
+
+    await updatePerson({ ...before, remarque: 'Boîte au nom de MARTIN' });
+    const [withRemarque] = await getAllPersons();
+    expect(withRemarque.remarque).toBe('Boîte au nom de MARTIN');
+
+    await updatePerson({ ...withRemarque, remarque: 'BAL derrière la porte' });
+    const [modified] = await getAllPersons();
+    expect(modified.remarque).toBe('BAL derrière la porte');
+
+    await updatePerson({ ...modified, remarque: null });
+    const [cleared] = await getAllPersons();
+    expect(cleared.remarque).toBeNull();
   });
 
   it('une fiche ancienne sans champ reexpedition est lue avec reexpedition = false', async () => {

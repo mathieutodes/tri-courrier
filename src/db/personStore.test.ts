@@ -80,6 +80,7 @@ const p = (nom: string, colonne: number, panneau: number | null = null): PersonI
   panneau,
   logement: null,
   reexpedition: false,
+  remarque: null,
 });
 
 beforeEach(() => {

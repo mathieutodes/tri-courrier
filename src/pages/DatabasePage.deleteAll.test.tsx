@@ -31,6 +31,7 @@ vi.mock('../App', () => ({
 
 vi.mock('../db/personStore', () => ({
   usePersons: () => mockPersons,
+  arePersonsLoaded: () => true,
   ensurePersonsLoaded: vi.fn(),
   refreshPersons: vi.fn(async () => {}),
   addPersonSynced: vi.fn(async () => {}),
@@ -71,6 +72,7 @@ function person(id: string, nom: string): Person {
     panneau: null,
     logement: null,
     reexpedition: false,
+    remarque: null,
   };
 }
 

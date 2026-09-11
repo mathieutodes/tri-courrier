@@ -34,6 +34,15 @@ export interface Person {
    * sélection du destinataire.
    */
   reexpedition: boolean;
+  /**
+   * Note libre facultative sur le destinataire (ex. "Boîte au nom de MARTIN",
+   * "BAL derrière la porte"). `null` pour toutes les fiches créées avant
+   * l'ajout de ce champ (voir `fromStored` dans `src/db/database.ts` : lu
+   * défensivement avec `?? null`) et pour toute remarque vidée par
+   * l'utilisateur. N'intervient jamais dans la recherche/preshot — affichée
+   * uniquement sur l'écran résultat, sous le panneau/colonne/logement.
+   */
+  remarque: string | null;
 }
 
 /** Données d'un formulaire avant validation / création de l'id. */
@@ -47,6 +56,7 @@ export interface PersonInput {
   panneau: number | null;
   logement: string | null;
   reexpedition: boolean;
+  remarque: string | null;
 }
 
 export const MIN_COLONNE = 1;

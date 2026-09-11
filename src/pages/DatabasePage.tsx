@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { navigate } from '../App';
 import {
   addPersonSynced,
+  arePersonsLoaded,
   bulkAddPersonsSynced,
   bulkImportPersonsSynced,
   deleteAllPersonsSynced,
@@ -41,7 +42,7 @@ import { DEMO_PERSONS } from '../services/demoData';
 type View =
   | { kind: 'list' }
   | { kind: 'add' }
-  | { kind: 'edit'; person: Person }
+  | { kind: 'edit'; person: Person; autoFocusRemarque?: boolean }
   | { kind: 'rues' }
   | { kind: 'import'; preview: ImportPreview };
 
@@ -49,10 +50,23 @@ function fullName(p: Person): string {
   return p.prenom ? `${p.nom} ${p.prenom}` : p.nom;
 }
 
-export default function DatabasePage() {
+interface Props {
+  /**
+   * ID d'un destinataire à ouvrir DIRECTEMENT en mode modification (venant du
+   * bouton « APPORTER UNE PRÉCISION » de l'écran résultat) — voir `App.tsx`.
+   * `null`/`undefined` : ouverture normale sur la liste.
+   */
+  editPersonId?: string | null;
+}
+
+export default function DatabasePage({ editPersonId = null }: Props) {
   const persons = usePersons();
   const rues = useRues();
   const [view, setView] = useState<View>({ kind: 'list' });
+  // Évite de ré-imposer la vue « Modifier » si l'utilisateur revient ensuite
+  // volontairement sur la liste (Retour) : un ID donné n'est consommé qu'UNE
+  // SEULE fois.
+  const appliedEditPersonId = useRef<string | null>(null);
   const [adminQuery, setAdminQuery] = useState('');
   const [toDelete, setToDelete] = useState<Person | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -70,6 +84,27 @@ export default function DatabasePage() {
     void refreshPersons();
     void refreshRues();
   }, []);
+
+  // Ouverture directe de la fiche « Modifier » pour `editPersonId` (bouton
+  // « APPORTER UNE PRÉCISION »). On attend que le premier chargement depuis
+  // IndexedDB soit terminé avant de conclure qu'un ID est introuvable — sinon
+  // un rechargement de page (cache encore vide) ferait croire à tort que le
+  // destinataire n'existe plus. Si l'ID reste introuvable une fois les
+  // données chargées (donnée supprimée, lien obsolète) : on reste simplement
+  // sur la liste, sans jamais planter.
+  useEffect(() => {
+    if (!editPersonId) return;
+    if (appliedEditPersonId.current === editPersonId) return;
+    if (!arePersonsLoaded()) return;
+    appliedEditPersonId.current = editPersonId;
+    const person = persons.find((p) => p.id === editPersonId);
+    if (person) {
+      setView({ kind: 'edit', person, autoFocusRemarque: true });
+    }
+    // Consomme le lien profond : l'URL redevient `#/database`, pour qu'un
+    // rechargement ultérieur ne rouvre pas cette fiche indéfiniment.
+    navigate('database');
+  }, [editPersonId, persons]);
 
   // Filtre par ADRESSE COMPLÈTE (page Base de données uniquement) : source =
   // person.adresse, jamais le store `rues`. Recalculé à chaque changement de
@@ -237,6 +272,7 @@ export default function DatabasePage() {
             rues={rues}
             onSubmit={isEdit ? handleEdit : handleAdd}
             onCancel={() => setView({ kind: 'list' })}
+            autoFocusRemarque={isEdit && view.autoFocusRemarque === true}
           />
         </div>
       </div>
@@ -422,6 +458,9 @@ export default function DatabasePage() {
                     )}
                     {p.reexpedition && (
                       <span className="reexpedition-badge">RÉEXPÉDITION</span>
+                    )}
+                    {p.remarque !== null && p.remarque !== '' && (
+                      <span className="remarque-badge">REMARQUE</span>
                     )}
                   </span>
                 </div>
