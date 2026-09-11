@@ -4,8 +4,9 @@ import { filterByNomPrefix, searchByNom } from '../db/database';
 import { ensurePersonsLoaded, refreshPersons, usePersons } from '../db/personStore';
 import type { Person } from '../types/person';
 import { normalizeText } from '../utils/normalizeText';
+import ScanView from '../components/ScanView';
 import SearchResultView from '../components/SearchResultView';
-import { DatabaseIcon, SearchIcon } from '../components/icons';
+import { CameraIcon, DatabaseIcon, SearchIcon } from '../components/icons';
 
 type Phase =
   | { kind: 'idle' }
@@ -29,6 +30,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [busy, setBusy] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   // Copie locale (store en mémoire) filtrée localement pour un preshot instantané.
   // Le store est resynchronisé avec IndexedDB à chaque écriture ET à chaque
   // retour sur cette page — voir src/db/personStore.ts.
@@ -71,6 +73,10 @@ export default function SearchPage() {
     setPhase({ kind: 'idle' });
     // Laisse React repeindre puis remet le focus (fait apparaître le clavier).
     requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  if (scanOpen) {
+    return <ScanView onClose={() => setScanOpen(false)} />;
   }
 
   if (phase.kind === 'one') {
@@ -169,6 +175,17 @@ export default function SearchPage() {
             RECHERCHER
           </button>
         </form>
+
+        {!hasQuery && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-lg btn-block scan-open-btn"
+            onClick={() => setScanOpen(true)}
+          >
+            <CameraIcon size={20} />
+            SCAN COURRIER
+          </button>
+        )}
 
         {hasQuery && (
           <div className="suggestions" role="listbox" aria-label="Suggestions">
