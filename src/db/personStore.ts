@@ -3,6 +3,7 @@ import type { Person, PersonInput } from '../types/person';
 import {
   addPerson,
   bulkAddPersons,
+  deleteAllPersons,
   deletePerson,
   getAllPersons,
   updatePerson,
@@ -92,6 +93,15 @@ export async function bulkAddPersonsSynced(inputs: PersonInput[]): Promise<numbe
   const count = await bulkAddPersons(inputs);
   await refreshPersons();
   return count;
+}
+
+/**
+ * Supprime TOUTES les personnes (store `persons` uniquement — les rues ne
+ * sont jamais touchées), puis resynchronise le cache et notifie les abonnés.
+ */
+export async function deleteAllPersonsSynced(): Promise<void> {
+  await deleteAllPersons();
+  await refreshPersons();
 }
 
 /** Réinitialise l'état du store (tests uniquement). */

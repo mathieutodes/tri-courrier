@@ -3,6 +3,7 @@ import { navigate } from '../App';
 import {
   addPersonSynced,
   bulkAddPersonsSynced,
+  deleteAllPersonsSynced,
   deletePersonSynced,
   ensurePersonsLoaded,
   refreshPersons,
@@ -53,6 +54,9 @@ export default function DatabasePage() {
   const [toDelete, setToDelete] = useState<Person | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllConfirmed, setDeleteAllConfirmed] = useState(false);
+  const [deleteAllBusy, setDeleteAllBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -100,6 +104,30 @@ export default function DatabasePage() {
     await deletePersonSynced(toDelete.id);
     setToDelete(null);
     flash('Personne supprimée.');
+  }
+
+  function openDeleteAll() {
+    setDeleteAllConfirmed(false);
+    setDeleteAllOpen(true);
+  }
+
+  function cancelDeleteAll() {
+    setDeleteAllOpen(false);
+    setDeleteAllConfirmed(false);
+  }
+
+  async function confirmDeleteAll() {
+    if (!deleteAllConfirmed) return;
+    setDeleteAllBusy(true);
+    try {
+      // Supprime uniquement les personnes ; les rues ne sont jamais touchées.
+      await deleteAllPersonsSynced();
+      setDeleteAllOpen(false);
+      setDeleteAllConfirmed(false);
+      flash('Tous les destinataires ont été supprimés.');
+    } finally {
+      setDeleteAllBusy(false);
+    }
   }
 
   async function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
@@ -362,7 +390,56 @@ export default function DatabasePage() {
           })}
           {filtered.length === 0 && <li className="empty-row">Aucune entrée.</li>}
         </ul>
+
+        <div className="danger-zone">
+          <span className="danger-zone-title">Zone dangereuse</span>
+          <p className="hint">
+            Supprime définitivement tous les destinataires enregistrés sur cet appareil. Les
+            rues enregistrées ne sont pas concernées.
+          </p>
+          <button
+            type="button"
+            className="btn btn-danger btn-block"
+            onClick={openDeleteAll}
+            disabled={persons.length === 0}
+          >
+            SUPPRIMER TOUS LES DESTINATAIRES
+          </button>
+        </div>
       </div>
+
+      {deleteAllOpen && (
+        <div className="modal-backdrop" onClick={cancelDeleteAll}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <p className="modal-text">Supprimer tous les destinataires ?</p>
+            <p className="hint">
+              Cette action supprimera définitivement tous les destinataires enregistrés sur cet
+              appareil. Les rues enregistrées seront conservées. Cette action est irréversible.
+            </p>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={deleteAllConfirmed}
+                onChange={(e) => setDeleteAllConfirmed(e.target.checked)}
+              />
+              <span>Je confirme vouloir supprimer tous les destinataires</span>
+            </label>
+            <div className="form-actions">
+              <button type="button" className="btn btn-secondary" onClick={cancelDeleteAll}>
+                ANNULER
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={!deleteAllConfirmed || deleteAllBusy}
+                onClick={() => void confirmDeleteAll()}
+              >
+                SUPPRIMER DÉFINITIVEMENT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toDelete && (
         <div className="modal-backdrop" onClick={() => setToDelete(null)}>

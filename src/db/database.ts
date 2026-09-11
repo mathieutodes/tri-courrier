@@ -128,6 +128,15 @@ export async function bulkAddPersons(inputs: PersonInput[]): Promise<number> {
   return inputs.length;
 }
 
+/**
+ * Supprime TOUTES les personnes (store `persons` uniquement).
+ * Ne touche jamais au store `rues`.
+ */
+export async function deleteAllPersons(): Promise<void> {
+  const db = await getDB();
+  await db.clear(STORE);
+}
+
 // ---------- Rues ----------
 
 function toStoredRue(rue: Rue): StoredRue {

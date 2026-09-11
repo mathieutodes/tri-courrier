@@ -686,6 +686,54 @@ body {
   font-size: 14px;
 }
 
+/* Zone dangereuse : action destructive, isolée visuellement en bas de page. */
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--r-md);
+}
+
+.danger-zone-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+}
+
+.danger-zone .btn-danger {
+  margin-top: var(--s-1);
+}
+
+/* Case à cocher de confirmation (modales destructives) */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: var(--s-1) 0 var(--s-4);
+  padding: var(--s-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkbox-row input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--danger-btn);
+}
+
 /* =========================================================================
    Formulaires
    ========================================================================= */

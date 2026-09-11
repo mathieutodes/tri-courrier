@@ -23,6 +23,9 @@ vi.mock('./database', () => {
       for (const input of inputs) db.push({ id: `id${++seq}`, ...input });
       return inputs.length;
     }),
+    deleteAllPersons: vi.fn(async () => {
+      db = [];
+    }),
     __clear: () => {
       db = [];
       seq = 0;
@@ -35,6 +38,7 @@ import {
   __resetPersonStoreForTests,
   addPersonSynced,
   bulkAddPersonsSynced,
+  deleteAllPersonsSynced,
   deletePersonSynced,
   getPersonsSnapshot,
   refreshPersons,
@@ -109,5 +113,43 @@ describe('personStore', () => {
   it('refreshPersons dédoublonne les appels concurrents', async () => {
     await Promise.all([refreshPersons(), refreshPersons(), refreshPersons()]);
     expect(database.getAllPersons).toHaveBeenCalledTimes(1);
+  });
+
+  describe('deleteAllPersonsSynced', () => {
+    it('supprime toutes les personnes', async () => {
+      await addPersonSynced(p('DUPONT', 5));
+      await addPersonSynced(p('MARTIN', 2));
+      await addPersonSynced(p('DURAND', 8));
+      expect(getPersonsSnapshot()).toHaveLength(3);
+
+      await deleteAllPersonsSynced();
+
+      expect(database.deleteAllPersons).toHaveBeenCalledTimes(1);
+    });
+
+    it('le cache du store est vide immédiatement après la suppression', async () => {
+      await addPersonSynced(p('DUPONT', 5));
+      await addPersonSynced(p('MARTIN', 2));
+
+      await deleteAllPersonsSynced();
+
+      expect(getPersonsSnapshot()).toEqual([]);
+    });
+
+    it('notifie les abonnés (recherche / liste) immédiatement', async () => {
+      await addPersonSynced(p('DUPONT', 5));
+      const listener = vi.fn();
+      const unsub = subscribePersons(listener);
+
+      await deleteAllPersonsSynced();
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      unsub();
+    });
+
+    it('fonctionne aussi quand la base est déjà vide', async () => {
+      await expect(deleteAllPersonsSynced()).resolves.toBeUndefined();
+      expect(getPersonsSnapshot()).toEqual([]);
+    });
   });
 });
