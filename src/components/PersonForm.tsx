@@ -328,19 +328,35 @@ export default function PersonForm({
         <textarea
           ref={remarqueRef}
           className="input textarea"
+          // Identifiant sémantiquement NEUTRE, volontairement distinct de
+          // "nom"/"prenom"/"adresse"/toute sémantique de contact : sans
+          // `name`/`id` explicite, Safari doit deviner le rôle du champ à
+          // partir du contexte — ici un `<form>` qui contient Nom, Prénom,
+          // Numéro et Rue juste au-dessus. Cette combinaison ressemble
+          // fortement à un formulaire de fiche contact aux yeux de
+          // l'heuristique d'auto-remplissage d'iOS/Safari, qui peut alors
+          // proposer de préremplir Remarque avec une donnée de Contacts. Un
+          // identifiant explicite de note libre retire cette ambiguïté.
+          name="freeform-note"
+          id="freeform-note"
           rows={3}
           placeholder="ex. Boîte au nom de MARTIN, BAL derrière la porte…"
           value={fields.remarque}
           onChange={(e) => set('remarque', e.target.value)}
-          // Champ de texte libre en langage naturel : on veut explicitement
-          // le clavier NATIF complet de l'iPhone (autocorrection, suggestions,
-          // majuscule automatique en début de phrase) — jamais désactivé, et
-          // jamais de correction "maison". Déclaré explicitement plutôt que
-          // laissé aux valeurs par défaut du moteur : ce champ reçoit aussi le
-          // focus par programmation (`autoFocusRemarque`), un cas où Safari
-          // applique parfois ses réglages de saisie de façon moins fiable si
-          // les attributs ne sont pas déjà présents sur l'élément avant le
-          // `.focus()`.
+          // Champ de texte libre en langage naturel, PAS une donnée de
+          // contact : `autoComplete="off"` indique explicitement à Safari de
+          // ne pas y appliquer d'auto-remplissage (Contact, adresse…) — sans
+          // toucher au clavier lui-même, qui doit rester NATIF complet
+          // (autocorrection, suggestions, majuscule automatique en début de
+          // phrase), jamais désactivé, et jamais de correction "maison".
+          // Concerne UNIQUEMENT ce champ : Nom/Prénom/Numéro/Rue ne sont pas
+          // modifiés.
+          //
+          // Limite connue : Safari applique aussi ses propres heuristiques et
+          // peut, dans certains cas, ignorer `autocomplete="off"` — cet
+          // attribut réduit la probabilité de détection Contact, il ne la
+          // supprime pas avec certitude à lui seul.
+          autoComplete="off"
           autoCorrect="on"
           autoCapitalize="sentences"
           spellCheck={true}

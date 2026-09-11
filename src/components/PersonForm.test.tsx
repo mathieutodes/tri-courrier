@@ -597,4 +597,52 @@ describe('PersonForm', () => {
       expect(textarea.getAttribute('autocapitalize')).not.toBe('none');
     });
   });
+
+  describe('BUG 3 — Remarque ne doit jamais être détectée par Safari comme un champ Contact', () => {
+    it('autoComplete="off" est déclaré explicitement sur la textarea', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      expect(textarea.getAttribute('autocomplete')).toBe('off');
+    });
+
+    it('name/id sont sémantiquement neutres ("note libre"), jamais évocateurs d’un champ de contact', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      const contactLike = /\b(name|prenom|nom|adresse|address|contact|person|email|tel|phone)\b/i;
+      expect(textarea.name).not.toBe('');
+      expect(textarea.name).not.toMatch(contactLike);
+      expect(textarea.id).not.toBe('');
+      expect(textarea.id).not.toMatch(contactLike);
+    });
+
+    it("n'utilise jamais un autocomplete de type identité/contact (name, given-name, family-name, street-address…)", () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      const forbidden = [
+        'name',
+        'given-name',
+        'family-name',
+        'street-address',
+        'address-line1',
+        'tel',
+        'email',
+        'organization',
+      ];
+      expect(forbidden).not.toContain(textarea.getAttribute('autocomplete'));
+    });
+
+    it('les champs Nom/Prénom/Numéro/Rue ne sont pas affectés par cette correction (comportement inchangé)', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const nomInput = screen.getByLabelText(/^nom/i) as HTMLInputElement;
+      const prenomInput = screen.getByLabelText(/^prénom/i) as HTMLInputElement;
+      const numeroInput = screen.getByLabelText(/numéro \*/i) as HTMLInputElement;
+      // Comportement d'origine préservé : Nom garde son autoCorrect="off"
+      // dédié (majuscules forcées), les autres restent sans attribut
+      // autocomplete/autocorrect particulier — rien de tout cela ne vient de
+      // la correction apportée à Remarque.
+      expect(nomInput.getAttribute('autocorrect')).toBe('off');
+      expect(prenomInput.getAttribute('autocomplete')).toBeNull();
+      expect(numeroInput.getAttribute('autocomplete')).toBeNull();
+    });
+  });
 });
