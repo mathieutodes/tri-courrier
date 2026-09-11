@@ -46,6 +46,12 @@
   --accent-blue-text: #ffffff;
   --accent-blue-soft: rgba(10, 132, 255, 0.12);
 
+  /* ---- Barre supérieure (appbar) : OPAQUE volontairement (voir plus bas) —
+     jamais de glass ici, pour une coupure franche et nette avec le contenu
+     qui défile derrière. ---- */
+  --appbar-bg: #f7f9fc;
+  --appbar-shadow: 0 1px 0 rgba(15, 23, 42, 0.06), 0 2px 10px -6px rgba(15, 23, 42, 0.12);
+
   /* ---- Accent neutre : fallback carte résultat SANS colonne (jamais de
      couleur de colonne inventée) — distinct du bleu d'action, volontairement
      sobre. Peut être surchargé par instance via `--card-accent` inline
@@ -178,11 +184,12 @@ body {
    ni toucher au balisage existant.
    ========================================================================= */
 
-/* glass-surface : bande/zone translucide DENSE, sans forcément de blur propre
-   (utilisée pour l'appbar — le blur y est volontairement omis, voir plus
-   bas « performance »). */
-.glass-surface,
-.appbar {
+/* glass-surface : bande/zone translucide DENSE (utilitaire réutilisable —
+   voir `.appbar` plus bas pour le cas où une surface doit au contraire être
+   totalement OPAQUE : une barre sticky avec du contenu qui défile dessous
+   n'est précisément PAS un cas d'usage pour le glass, voir section
+   « performance / lisibilité » plus bas). */
+.glass-surface {
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border-soft);
 }
@@ -232,12 +239,15 @@ body {
   background: transparent;
 }
 
-/* Barre de navigation : teinte "glass" DENSE mais SANS `backdrop-filter`.
-   `position: sticky` + `backdrop-filter` est une combinaison connue pour
-   scintiller/casser sur Safari iOS au scroll (c'est exactement l'effet de
-   flou involontaire déjà signalé sur un bouton) — on obtient un rendu glass
-   cohérent avec un fond quasi opaque et un liseré translucide, sans le coût
-   ni le risque du blur en position sticky. */
+/* Barre de navigation : ENTIÈREMENT OPAQUE, jamais de glass ni de
+   `backdrop-filter` ici. `position: sticky` + surface translucide est une
+   combinaison qui laisse voir le contenu défiler derrière (l'effet de
+   fondu/transparence indésirable constaté à l'usage) et qui, en plus,
+   scintille parfois sur Safari iOS au scroll — deux raisons de vouloir une
+   coupure totalement NETTE entre la barre et le formulaire/la liste en
+   dessous : quel que soit ce qui défile derrière, RIEN n'est visible à
+   travers. La séparation est matérialisée par un liseré bas très discret et
+   une ombre nette (pas de dégradé), tout en restant sticky. */
 .appbar {
   position: sticky;
   top: 0;
@@ -247,7 +257,9 @@ body {
   gap: var(--s-3);
   padding: calc(var(--safe-top) + 10px) calc(var(--safe-right) + var(--s-4)) 10px
     calc(var(--safe-left) + var(--s-4));
-  border-bottom: 1px solid var(--border);
+  background: var(--appbar-bg);
+  box-shadow: var(--appbar-shadow);
+  border-bottom: 1px solid var(--border-strong);
   border-left: none;
   border-right: none;
   border-top: none;
@@ -364,10 +376,18 @@ body {
   background: var(--glass-bg);
 }
 
-/* Bouton de filtre (adresse…) quand un filtre est actif : liseré bleu. */
+/* Filtre par adresse : pilule compacte juste sous la recherche admin — assez
+   grande pour rester facile à toucher, sans peser autant qu'un bouton
+   d'action pleine hauteur. */
+.filter-btn {
+  min-height: 46px;
+  border-radius: var(--r-full);
+}
+
 .filter-btn.active {
   border-color: var(--accent-blue);
   color: var(--accent-blue);
+  background: var(--accent-blue-soft);
 }
 
 /* Action destructive : TOUJOURS un rouge plein, opaque, sans ambiguïté —
@@ -732,13 +752,29 @@ body {
   color: var(--text-2);
 }
 
-/* Les deux numéros : MÊME taille, MÊME style, couleur d'accent de la colonne. */
+/* PANNEAU reste immédiatement identifiable mais plus discret que
+   COLONNE/LOGEMENT : label légèrement agrandi (repère visuel net) — voir
+   `.rfig-num-neutral` ci-dessous pour le chiffre, qui lui doit rester neutre
+   (jamais coloré de l'accent de colonne). */
+.rfig-label-panneau {
+  font-size: clamp(0.95rem, 4.1vw, 1.3rem);
+}
+
+/* Les deux numéros : MÊME taille, MÊME style. COLONNE/LOGEMENT gardent la
+   couleur d'accent (colonne colorée, ou neutre en son absence) ; PANNEAU est
+   volontairement neutre (voir `.rfig-num-neutral`) pour que le chiffre le
+   plus important — celui de la colonne — reste l'élément qui capte l'œil en
+   premier. */
 .rfig-num {
   font-size: clamp(3.4rem, 19vw, 6rem);
   font-weight: 900;
   line-height: 0.95;
   color: var(--card-accent);
   font-variant-numeric: tabular-nums;
+}
+
+.rfig-num-neutral {
+  color: var(--text);
 }
 
 /* Numéro de LOGEMENT : chaîne libre pouvant atteindre 4 caractères et plus
@@ -751,13 +787,15 @@ body {
   word-break: break-word;
 }
 
+/* Séparation verticale TRÈS discrète entre PANNEAU et COLONNE/LOGEMENT :
+   neutre, jamais teintée de la couleur de colonne (elle doit rester
+   secondaire, un simple repère structurel). */
 .rfig-divider {
   flex: 0 0 auto;
-  width: 2px;
+  width: 1.5px;
   align-self: stretch;
   margin: clamp(2px, 1vh, 8px) 0;
-  background: var(--card-accent);
-  opacity: 0.35;
+  background: var(--border-strong);
   border-radius: 2px;
 }
 
@@ -816,9 +854,9 @@ body {
 }
 
 .reexpedition-banner-title {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -828,19 +866,18 @@ body {
   line-height: 1.35;
 }
 
-/* Bloc REMARQUE : sous le panneau/colonne/logement, glass sobre et TRÈS
-   lisible. Le retour à la ligne automatique + `overflow-wrap` empêchent
-   tout débordement horizontal, y compris pour un mot long sans espace, sur
-   iPhone 375px. */
+/* Bloc REMARQUE : petite carte INDÉPENDANTE et OPAQUE (pas de glass ici —
+   c'est un contenu secondaire, texte libre de longueur variable, dont la
+   lisibilité prime sur tout effet visuel ; elle doit aussi se détacher
+   clairement de la grande carte "hero" au-dessus). Arrondie, fond clair,
+   ombre extrêmement légère. */
 .remarque-block {
   flex: 0 0 auto;
   width: 100%;
   max-width: 440px;
   padding: var(--s-3) var(--s-4);
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-  border: 1px solid var(--glass-border);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--glass-shadow-sm);
   text-align: left;
@@ -850,16 +887,18 @@ body {
 .remarque-label {
   display: block;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-2);
 }
 
+/* Texte de la remarque : lisible mais délibérément SECONDAIRE par rapport à
+   l'emplacement (pas de grosse typographie). */
 .remarque-text {
   margin: 0;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
   line-height: 1.45;
   color: var(--text);
@@ -868,10 +907,14 @@ body {
   word-break: break-word;
 }
 
+/* APPORTER UNE PRÉCISION : grand bouton bleu, très arrondi (pilule, comme
+   NOUVELLE RECHERCHE), hauteur tactile confortable. */
 .result-secondary {
   flex: 0 0 auto;
   width: 100%;
   max-width: 440px;
+  min-height: 56px;
+  border-radius: var(--r-xl);
 }
 
 /* =========================================================================
@@ -895,6 +938,16 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+/* Sous-titre discret juste sous la barre "Base de données" : nombre de
+   destinataires, calculé à partir des données déjà chargées (aucun nouveau
+   stockage). */
+.db-subtitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 550;
   color: var(--text-2);
 }
 
@@ -925,6 +978,15 @@ body {
   white-space: nowrap;
 }
 
+/* Bloc recherche admin : grande capsule glass "iOS", puis le filtre adresse
+   juste en dessous — regroupés visuellement, avec assez de respiration entre
+   les deux pour rester facile à toucher au doigt. */
+.db-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
 .btn-file {
   cursor: pointer;
 }
@@ -952,7 +1014,7 @@ body {
   padding: var(--s-4);
   background: var(--glass-bg-light);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   box-shadow: var(--glass-shadow-sm);
 }
 
@@ -963,8 +1025,8 @@ body {
 }
 
 .card-title {
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 16.5px;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 
@@ -973,30 +1035,35 @@ body {
   color: var(--text-2);
 }
 
+/* Ligne "emplacement" (panneau/colonne/logement + repères) : légèrement
+   détachée du nom/adresse pour bien la lire comme un groupe à part —
+   l'emplacement, présenté en petits badges/capsules. */
 .card-meta {
   display: flex;
   align-items: center;
   gap: var(--s-2);
   flex-wrap: wrap;
+  margin-top: 2px;
   font-size: 12px;
   color: var(--text-2);
 }
 
-.colonne-badge {
+/* Badges d'emplacement — texte en capitales pour un repère immédiat,
+   cohérent avec les libellés de l'écran résultat (PANNEAU/COLONNE/LOGEMENT). */
+.colonne-badge,
+.logement-badge,
+.panneau-badge {
   padding: 3px 9px;
   border-radius: var(--r-full);
   font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 /* Pas de colonne (fiche panneau + logement) : pastille neutre, sans couleur inventée. */
-.logement-badge {
-  padding: 3px 9px;
-  border-radius: var(--r-full);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.02em;
+.logement-badge,
+.panneau-badge {
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   color: var(--text-2);

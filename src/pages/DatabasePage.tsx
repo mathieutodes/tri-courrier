@@ -37,7 +37,7 @@ import {
 import PersonForm from '../components/PersonForm';
 import RueManager from '../components/RueManager';
 import AddressFilterModal from '../components/AddressFilterModal';
-import { BackIcon } from '../components/icons';
+import { BackIcon, SearchIcon } from '../components/icons';
 import { DEMO_PERSONS } from '../services/demoData';
 
 type View =
@@ -387,6 +387,12 @@ export default function DatabasePage({ editPersonId = null }: Props) {
       </header>
 
       <div className="screen-body">
+        {/* Sous-titre discret sous le titre "Base de données" : calculé à
+            partir des données déjà chargées, aucun nouveau stockage. */}
+        <p className="db-subtitle">
+          {persons.length} destinataire{persons.length > 1 ? 's' : ''}
+        </p>
+
         {message && <div className="toast">{message}</div>}
 
         <div className="db-actions">
@@ -430,15 +436,20 @@ export default function DatabasePage({ editPersonId = null }: Props) {
           )}
         </div>
 
-        <div className="field">
-          <span className="section-label">Destinataires ({persons.length})</span>
-          <input
-            className="input"
-            type="text"
-            placeholder="Rechercher (nom, prénom, adresse)…"
-            value={adminQuery}
-            onChange={(e) => setAdminQuery(e.target.value)}
-          />
+        <div className="db-search">
+          <span className="section-label">Rechercher</span>
+          <div className="search-field">
+            <span className="search-field-icon">
+              <SearchIcon size={20} />
+            </span>
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Rechercher nom, prénom, adresse…"
+              value={adminQuery}
+              onChange={(e) => setAdminQuery(e.target.value)}
+            />
+          </div>
           <button
             type="button"
             className={`btn btn-secondary btn-block filter-btn${
@@ -461,7 +472,9 @@ export default function DatabasePage({ editPersonId = null }: Props) {
                   <span className="card-title">{fullName(p)}</span>
                   <span className="card-sub">{p.adresse}</span>
                   <span className="card-meta">
-                    {p.panneau !== null && <>Panneau {p.panneau}</>}
+                    {p.panneau !== null && (
+                      <span className="panneau-badge">Panneau {p.panneau}</span>
+                    )}
                     {p.colonne !== null && color && (
                       <span
                         className="colonne-badge"

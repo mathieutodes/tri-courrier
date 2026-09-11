@@ -35,6 +35,22 @@ export function BackIcon({ size = 22 }: IconProps) {
   );
 }
 
+/** Petit crayon — bouton APPORTER UNE PRÉCISION. */
+export function PencilIcon({ size = 22 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 20l.9-4.2L15.5 5.2a1.5 1.5 0 0 1 2.12 0l1.18 1.18a1.5 1.5 0 0 1 0 2.12L8.2 19.1 4 20Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path d="M13.5 7.2l3.3 3.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Triangle d'avertissement + point d'exclamation — bandeau RÉEXPÉDITION. */
 export function WarningIcon({ size = 22 }: IconProps) {
   return (

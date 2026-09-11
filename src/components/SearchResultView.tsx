@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { navigateToEditPerson } from '../App';
 import type { Person } from '../types/person';
 import { getColumnAccent } from '../utils/columnColors';
-import { WarningIcon } from './icons';
+import { PencilIcon, WarningIcon } from './icons';
 
 interface Props {
   person: Person;
@@ -69,9 +69,12 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       <div className={`result-card${solo ? ' result-card-solo' : ''}`} style={cardStyle}>
         {showPanneauFigure && (
           <>
+            {/* PANNEAU : immédiatement identifiable (label légèrement
+                agrandi) mais volontairement neutre — le chiffre le plus
+                important reste celui de COLONNE/LOGEMENT à côté. */}
             <div className="rfig">
-              <span className="rfig-label">PANNEAU</span>
-              <span className="rfig-num">{person.panneau}</span>
+              <span className="rfig-label rfig-label-panneau">PANNEAU</span>
+              <span className="rfig-num rfig-num-neutral">{person.panneau}</span>
             </div>
             <div className="rfig-divider" aria-hidden="true" />
           </>
@@ -103,6 +106,7 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         className="btn btn-primary btn-block result-secondary"
         onClick={() => navigateToEditPerson(person.id)}
       >
+        <PencilIcon size={18} />
         APPORTER UNE PRÉCISION
       </button>
 
