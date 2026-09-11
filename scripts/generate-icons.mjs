@@ -10,7 +10,7 @@ const src = join(root, 'assets', 'logo-source.png');
 const outDir = join(root, 'public');
 
 // Couleur de fond des icônes PWA.
-const BG = '#68BD98';
+const BG = '#FFFFFF';
 
 const logoBuffer = await readFile(src);
 await mkdir(outDir, { recursive: true });
