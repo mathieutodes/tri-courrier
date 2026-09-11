@@ -11,6 +11,7 @@ export interface RawPersonFields {
   adresse: string;
   colonne: string;
   panneau: string;
+  logement: string;
 }
 
 export type ValidationErrors = Partial<Record<keyof RawPersonFields, string>>;
@@ -23,13 +24,20 @@ export interface ValidationResult {
 
 // ---------- Champs du formulaire personne (numéro + rue) ----------
 
+/**
+ * `mode` détermine quelle paire de champs le formulaire manuel utilise pour
+ * la localisation : soit `colonne` (+ panneau facultatif), soit `logement`
+ * (+ panneau obligatoire). L'interface n'autorise jamais les deux à la fois.
+ */
 export interface RawPersonForm {
   nom: string;
   prenom: string;
   numero: string;
   rueId: string;
+  mode: 'colonne' | 'logement';
   colonne: string;
   panneau: string;
+  logement: string;
 }
 
 export type PersonFormErrors = Partial<Record<keyof RawPersonForm, string>>;
@@ -42,7 +50,7 @@ export interface PersonFormResult {
 
 // ---------- Parseurs unitaires ----------
 
-/** Colonne : entier obligatoire compris entre 1 et 16. `null` si invalide. */
+/** Colonne : entier compris entre 1 et 16. `null` si invalide (ou vide). */
 export function parseColonne(raw: string): number | null {
   const trimmed = raw.trim();
   if (trimmed === '') return null;
@@ -75,6 +83,39 @@ export function parseNumero(raw: string): number | null {
   return n;
 }
 
+/**
+ * Numéro de logement : texte court FACULTATIF (ex. "314", "12", "A12", "12B").
+ * Un nombre n'est pas imposé afin de supporter des repères alphanumériques.
+ * Espaces superflus normalisés. `null` si vide.
+ */
+export function parseLogement(raw: string): string | null {
+  const trimmed = cleanStored(raw ?? '');
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
+ * Règle de localisation minimale, commune au CSV et au formulaire manuel :
+ * - colonne seule                -> OK
+ * - panneau + colonne            -> OK
+ * - panneau + logement           -> OK
+ * - ni colonne ni logement       -> refusé
+ * - logement renseigné sans panneau -> refusé
+ * Renvoie un message d'erreur, ou `null` si la localisation est exploitable.
+ */
+function localisationError(
+  colonne: number | null,
+  logement: string | null,
+  panneau: number | null,
+): string | null {
+  if (colonne === null && logement === null) {
+    return 'Indiquez une colonne, ou un panneau accompagné d’un numéro de logement.';
+  }
+  if (logement !== null && panneau === null) {
+    return 'Le panneau est obligatoire lorsqu’un numéro de logement est renseigné.';
+  }
+  return null;
+}
+
 // ---------- Validation CSV (adresse libre) ----------
 
 /** Valide une ligne CSV. L'adresse reste une chaîne libre (compatibilité). */
@@ -87,13 +128,34 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
   const adresse = cleanStored(fields.adresse);
   if (adresse === '') errors.adresse = "L'adresse est obligatoire.";
 
-  const colonne = parseColonne(fields.colonne);
-  if (colonne === null) {
-    errors.colonne = `La colonne doit être un entier compris entre ${MIN_COLONNE} et ${MAX_COLONNE}.`;
+  // Colonne désormais FACULTATIVE : vide -> null ; renseignée mais hors 1..16 -> erreur.
+  const colonneRaw = fields.colonne.trim();
+  let colonne: number | null = null;
+  if (colonneRaw !== '') {
+    colonne = parseColonne(fields.colonne);
+    if (colonne === null) {
+      errors.colonne = `La colonne doit être un entier compris entre ${MIN_COLONNE} et ${MAX_COLONNE}.`;
+    }
   }
 
   const panneau = parsePanneau(fields.panneau);
   if (!panneau.ok) errors.panneau = 'Le panneau doit être un entier positif.';
+
+  const logement = parseLogement(fields.logement);
+
+  // N'évalue la règle de localisation que si colonne/panneau sont déjà
+  // syntaxiquement valides (sinon on laisserait une erreur plus précise
+  // être masquée par un message générique).
+  if (!errors.colonne && !errors.panneau) {
+    const locErr = localisationError(colonne, logement, panneau.value);
+    if (locErr) {
+      if (logement !== null && panneau.value === null) {
+        errors.panneau = locErr;
+      } else {
+        errors.colonne = locErr;
+      }
+    }
+  }
 
   const prenomClean = cleanStored(fields.prenom);
   const prenom = prenomClean === '' ? null : prenomClean;
@@ -110,15 +172,19 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
       adresse,
       numeroRue: null,
       rueId: null,
-      colonne: colonne as number,
+      colonne,
       panneau: panneau.value,
+      logement,
     },
   };
 }
 
 // ---------- Validation du formulaire personne ----------
 
-/** Valide le formulaire Ajouter / Modifier une personne (numéro + rue). */
+/**
+ * Valide le formulaire Ajouter / Modifier une personne (numéro + rue, puis
+ * localisation selon `fields.mode`).
+ */
 export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFormResult {
   const errors: PersonFormErrors = {};
 
@@ -133,19 +199,34 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
   const rue = rues.find((r) => r.id === fields.rueId);
   if (!rue) errors.rueId = 'La rue est obligatoire.';
 
-  const colonne = parseColonne(fields.colonne);
-  if (colonne === null) {
-    errors.colonne = `La colonne doit être un entier compris entre ${MIN_COLONNE} et ${MAX_COLONNE}.`;
-  }
-
   const panneau = parsePanneau(fields.panneau);
   if (!panneau.ok) errors.panneau = 'Le panneau doit être un entier positif.';
+
+  // Le formulaire manuel impose l'UN ou l'AUTRE : jamais colonne + logement
+  // en même temps (l'interface ne montre que les champs du mode actif).
+  let colonne: number | null = null;
+  let logement: string | null = null;
+
+  if (fields.mode === 'colonne') {
+    colonne = parseColonne(fields.colonne);
+    if (colonne === null) {
+      errors.colonne = `La colonne doit être un entier compris entre ${MIN_COLONNE} et ${MAX_COLONNE}.`;
+    }
+  } else {
+    logement = parseLogement(fields.logement);
+    if (logement === null) {
+      errors.logement = 'Le numéro de logement est obligatoire.';
+    }
+    if (panneau.ok && panneau.value === null) {
+      errors.panneau = 'Le panneau est obligatoire lorsqu’un numéro de logement est renseigné.';
+    }
+  }
 
   const prenomClean = cleanStored(fields.prenom);
   const prenom = prenomClean === '' ? null : prenomClean;
 
   const valid = Object.keys(errors).length === 0;
-  if (!valid || !rue || numeroRue === null || colonne === null) {
+  if (!valid || !rue || numeroRue === null) {
     return { valid: false, errors };
   }
 
@@ -160,6 +241,7 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
       rueId: rue.id,
       colonne,
       panneau: panneau.value,
+      logement,
     },
   };
 }

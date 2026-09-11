@@ -77,6 +77,7 @@ function csvInput(nom: string, adresse: string, colonne = 1): PersonInput {
     rueId: null,
     colonne,
     panneau: null,
+    logement: null,
   };
 }
 
@@ -194,6 +195,45 @@ describe('bulkAddPersonsResolvingRues', () => {
     expect(await getAllRues()).toHaveLength(1);
     const [person] = await getAllPersons();
     expect(person.rueId).toBe('r1');
+  });
+
+  it('12. crée automatiquement la rue pour un import de fiches PANNEAU + LOGEMENT (sans colonne)', async () => {
+    const inputs: PersonInput[] = [
+      {
+        nom: 'LEROY',
+        prenom: null,
+        adresse: '3 Rue des Tilleuls',
+        numeroRue: null,
+        rueId: null,
+        colonne: null,
+        panneau: 4,
+        logement: '314',
+      },
+      {
+        nom: 'PETIT',
+        prenom: null,
+        adresse: '5 Rue des Tilleuls',
+        numeroRue: null,
+        rueId: null,
+        colonne: null,
+        panneau: 4,
+        logement: '315',
+      },
+    ];
+
+    const { count, ruesCreated } = await bulkAddPersonsResolvingRues(inputs);
+
+    expect(count).toBe(2);
+    expect(ruesCreated).toBe(1); // une seule rue malgré 2 fiches logement différentes
+
+    const rues = await getAllRues();
+    expect(rues.map((r) => r.nom)).toEqual(['Rue des Tilleuls']);
+
+    const persons = await getAllPersons();
+    expect(persons.every((p) => p.rueId === rues[0].id)).toBe(true);
+    expect(persons.every((p) => p.colonne === null)).toBe(true);
+    expect(persons.find((p) => p.logement === '314')?.numeroRue).toBe(3);
+    expect(persons.find((p) => p.logement === '315')?.numeroRue).toBe(5);
   });
 
   it('ne touche jamais aux personnes déjà enregistrées', async () => {

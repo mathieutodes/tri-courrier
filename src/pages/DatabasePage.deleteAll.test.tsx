@@ -69,6 +69,7 @@ function person(id: string, nom: string): Person {
     rueId: null,
     colonne: 1,
     panneau: null,
+    logement: null,
   };
 }
 
@@ -150,5 +151,17 @@ describe('DatabasePage — Zone dangereuse : suppression de tous les destinatair
       name: /supprimer tous les destinataires/i,
     }) as HTMLButtonElement;
     expect(openBtn.disabled).toBe(true);
+  });
+
+  it('13. fonctionne aussi avec un mélange colonne / panneau+logement (aucune régression)', async () => {
+    mockPersons = [
+      person('p1', 'DUPONT'), // colonne (via le helper)
+      { ...person('p2', 'LEROY'), colonne: null, panneau: 4, logement: '314' },
+    ];
+    openDeleteAllModal();
+    fireEvent.click(getCheckbox());
+    fireEvent.click(getConfirmButton());
+
+    await waitFor(() => expect(mockDeleteAllPersonsSynced).toHaveBeenCalledTimes(1));
   });
 });

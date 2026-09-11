@@ -458,8 +458,11 @@ body {
 }
 
 /* =========================================================================
-   Écran résultat — fond DARK, la couleur de colonne devient un ACCENT
-   (--accent est injecté en style inline par SearchResultView)
+   Écran résultat — fond DARK, la couleur de colonne devient un ACCENT.
+   `--accent` est injecté en style inline par SearchResultView UNIQUEMENT
+   quand une colonne existe ; sinon (cas PANNEAU + LOGEMENT) la propriété
+   n'est pas surchargée et hérite du token neutre global défini dans :root
+   (aucune couleur de colonne n'est inventée — style dark neutre conservé).
    ========================================================================= */
 
 .result {
@@ -667,6 +670,18 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* Pas de colonne (fiche panneau + logement) : pastille neutre, sans couleur inventée. */
+.logement-badge {
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+}
+
 .row-actions {
   display: flex;
   gap: var(--s-3);
@@ -805,6 +820,38 @@ select.input {
 .field-hint {
   color: var(--text-2);
   font-size: 13px;
+}
+
+/* Bascule Colonne / Panneau + Logement : guide l'utilisateur vers l'un ou l'autre. */
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.mode-toggle-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background var(--t),
+    color var(--t);
+}
+
+.mode-toggle-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .form-actions {

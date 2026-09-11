@@ -60,6 +60,7 @@ function seedPerson(id: string, nom: string) {
     rueId: null,
     colonne: 1,
     panneau: null,
+    logement: null,
     nomNormalise: nom.toLowerCase(),
   });
 }

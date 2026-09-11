@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   parseColonne,
+  parseLogement,
   parseNumero,
   parsePanneau,
   validatePerson,
@@ -64,11 +65,36 @@ describe('parseNumero', () => {
   });
 });
 
-describe('validatePerson (CSV — adresse libre)', () => {
-  const base = { nom: 'DUPONT', prenom: 'Jean', adresse: '12 rue Victor Hugo', colonne: '5', panneau: '1' };
+describe('parseLogement', () => {
+  it('accepte du texte court alphanumérique', () => {
+    expect(parseLogement('314')).toBe('314');
+    expect(parseLogement('A12')).toBe('A12');
+    expect(parseLogement('12B')).toBe('12B');
+  });
 
-  it('valide une entrée correcte (numeroRue / rueId null)', () => {
-    const r = validatePerson(base);
+  it('normalise les espaces superflus', () => {
+    expect(parseLogement('  314  ')).toBe('314');
+    expect(parseLogement('A   12')).toBe('A 12');
+  });
+
+  it('renvoie null si vide (facultatif)', () => {
+    expect(parseLogement('')).toBeNull();
+    expect(parseLogement('   ')).toBeNull();
+  });
+});
+
+describe('validatePerson (CSV — adresse libre)', () => {
+  const base = {
+    nom: 'DUPONT',
+    prenom: 'Jean',
+    adresse: '12 rue Victor Hugo',
+    colonne: '5',
+    panneau: '1',
+    logement: '',
+  };
+
+  it('1. colonne uniquement : valide (numeroRue / rueId / logement null)', () => {
+    const r = validatePerson({ ...base, panneau: '' });
     expect(r.valid).toBe(true);
     expect(r.value).toEqual({
       nom: 'DUPONT',
@@ -77,8 +103,44 @@ describe('validatePerson (CSV — adresse libre)', () => {
       numeroRue: null,
       rueId: null,
       colonne: 5,
-      panneau: 1,
+      panneau: null,
+      logement: null,
     });
+  });
+
+  it('2. panneau + colonne : valide', () => {
+    const r = validatePerson(base);
+    expect(r.valid).toBe(true);
+    expect(r.value?.colonne).toBe(5);
+    expect(r.value?.panneau).toBe(1);
+    expect(r.value?.logement).toBeNull();
+  });
+
+  it('3. panneau + logement (sans colonne) : valide', () => {
+    const r = validatePerson({ ...base, colonne: '', panneau: '2', logement: '314' });
+    expect(r.valid).toBe(true);
+    expect(r.value).toEqual({
+      nom: 'DUPONT',
+      prenom: 'Jean',
+      adresse: '12 rue Victor Hugo',
+      numeroRue: null,
+      rueId: null,
+      colonne: null,
+      panneau: 2,
+      logement: '314',
+    });
+  });
+
+  it('4. logement sans panneau : refusé', () => {
+    const r = validatePerson({ ...base, colonne: '', panneau: '', logement: '314' });
+    expect(r.valid).toBe(false);
+    expect(r.errors.panneau).toBeDefined();
+  });
+
+  it('5. ni colonne ni logement : refusé', () => {
+    const r = validatePerson({ ...base, colonne: '', panneau: '', logement: '' });
+    expect(r.valid).toBe(false);
+    expect(r.errors.colonne).toBeDefined();
   });
 
   it('exige le nom', () => {
@@ -93,22 +155,36 @@ describe('validatePerson (CSV — adresse libre)', () => {
     expect(validatePerson({ ...base, colonne: '20' }).errors.colonne).toBeDefined();
   });
 
-  it('accepte sans prénom ni panneau', () => {
+  it('accepte sans prénom ni panneau (colonne seule)', () => {
     const r = validatePerson({ ...base, prenom: '', panneau: '' });
     expect(r.valid).toBe(true);
     expect(r.value?.prenom).toBeNull();
     expect(r.value?.panneau).toBeNull();
   });
+
+  it('normalise les espaces du logement', () => {
+    const r = validatePerson({ ...base, colonne: '', panneau: '2', logement: '  314  ' });
+    expect(r.value?.logement).toBe('314');
+  });
 });
 
-describe('validatePersonForm (numéro + rue)', () => {
+describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
   const rues: Rue[] = [
     { id: 'r1', nom: 'Rue Victor Hugo' },
     { id: 'r2', nom: 'Avenue de Paris' },
   ];
-  const base = { nom: 'DUPONT', prenom: 'Jean', numero: '24', rueId: 'r1', colonne: '5', panneau: '1' };
+  const base = {
+    nom: 'DUPONT',
+    prenom: 'Jean',
+    numero: '24',
+    rueId: 'r1',
+    mode: 'colonne' as const,
+    colonne: '5',
+    panneau: '1',
+    logement: '',
+  };
 
-  it('construit l’adresse "24 Rue Victor Hugo" et renseigne numeroRue / rueId', () => {
+  it('mode colonne : construit l’adresse et renseigne numeroRue / rueId, logement null', () => {
     const r = validatePersonForm(base, rues);
     expect(r.valid).toBe(true);
     expect(r.value).toEqual({
@@ -119,23 +195,79 @@ describe('validatePersonForm (numéro + rue)', () => {
       rueId: 'r1',
       colonne: 5,
       panneau: 1,
+      logement: null,
     });
   });
 
-  it('exige un numéro entier strictement positif', () => {
+  it('mode colonne : exige un numéro entier strictement positif', () => {
     expect(validatePersonForm({ ...base, numero: '0' }, rues).errors.numero).toBeDefined();
     expect(validatePersonForm({ ...base, numero: '12bis' }, rues).errors.numero).toBeDefined();
   });
 
-  it('exige une rue existante', () => {
+  it('mode colonne : exige une rue existante', () => {
     expect(validatePersonForm({ ...base, rueId: '' }, rues).errors.rueId).toBeDefined();
     expect(validatePersonForm({ ...base, rueId: 'inconnue' }, rues).errors.rueId).toBeDefined();
   });
 
-  it('garde la colonne entre 1 et 16 et le panneau facultatif', () => {
+  it('mode colonne : colonne entre 1 et 16, panneau facultatif', () => {
     expect(validatePersonForm({ ...base, colonne: '17' }, rues).errors.colonne).toBeDefined();
     const r = validatePersonForm({ ...base, panneau: '' }, rues);
     expect(r.valid).toBe(true);
     expect(r.value?.panneau).toBeNull();
+  });
+
+  it('3. mode logement : panneau + logement valides -> colonne null', () => {
+    const r = validatePersonForm(
+      { ...base, mode: 'logement', colonne: '', panneau: '2', logement: '314' },
+      rues,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.value).toEqual({
+      nom: 'DUPONT',
+      prenom: 'Jean',
+      adresse: '24 Rue Victor Hugo',
+      numeroRue: 24,
+      rueId: 'r1',
+      colonne: null,
+      panneau: 2,
+      logement: '314',
+    });
+  });
+
+  it('4. mode logement : logement sans panneau -> refusé', () => {
+    const r = validatePersonForm(
+      { ...base, mode: 'logement', colonne: '', panneau: '', logement: '314' },
+      rues,
+    );
+    expect(r.valid).toBe(false);
+    expect(r.errors.panneau).toBeDefined();
+  });
+
+  it('5. mode logement : logement manquant -> refusé (aucune localisation)', () => {
+    const r = validatePersonForm(
+      { ...base, mode: 'logement', colonne: '', panneau: '2', logement: '' },
+      rues,
+    );
+    expect(r.valid).toBe(false);
+    expect(r.errors.logement).toBeDefined();
+  });
+
+  it('mode logement : n’envoie jamais de colonne (exclusivité colonne/logement du formulaire)', () => {
+    const r = validatePersonForm(
+      { ...base, mode: 'logement', colonne: '9', panneau: '2', logement: 'A12' },
+      rues,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.value?.colonne).toBeNull();
+    expect(r.value?.logement).toBe('A12');
+  });
+
+  it('accepte un logement alphanumérique avec espaces normalisés', () => {
+    const r = validatePersonForm(
+      { ...base, mode: 'logement', colonne: '', panneau: '3', logement: '  A 12  ' },
+      rues,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.value?.logement).toBe('A 12');
   });
 });

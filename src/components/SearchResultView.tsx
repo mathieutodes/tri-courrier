@@ -12,18 +12,39 @@ function fullName(person: Person): string {
 }
 
 export default function SearchResultView({ person, onNewSearch }: Props) {
-  const accent = getColumnAccent(person.colonne);
   const hasPanneau = person.panneau !== null && person.panneau !== undefined;
+  const hasColonne = person.colonne !== null && person.colonne !== undefined;
+  // La colonne reste prioritaire à l'affichage si — cas limite — une fiche
+  // avait les deux (la validation l'empêche normalement côté formulaire
+  // manuel ; un CSV externe malformé pourrait théoriquement le produire).
+  const hasLogement =
+    !hasColonne &&
+    person.logement !== null &&
+    person.logement !== undefined &&
+    person.logement.trim() !== '';
+
+  const secondaryLabel = hasColonne ? 'COLONNE' : hasLogement ? 'LOGEMENT' : null;
+  const secondaryValue = hasColonne
+    ? String(person.colonne)
+    : hasLogement
+      ? (person.logement as string)
+      : null;
+
+  // La couleur de colonne devient l'accent visuel de la carte. Sans colonne
+  // (cas PANNEAU + LOGEMENT), on n'invente aucune couleur : la carte garde
+  // le style dark neutre existant (fallback CSS vers le token global).
+  const accent = hasColonne ? getColumnAccent(person.colonne as number) : null;
+  const cardStyle = accent ? ({ '--accent': accent } as CSSProperties) : undefined;
+
+  const showPanneauFigure = hasPanneau && secondaryValue !== null;
+  const solo = !showPanneauFigure;
 
   return (
     <div className="result">
       <div className="result-name">{fullName(person)}</div>
 
-      <div
-        className={`result-card${hasPanneau ? '' : ' result-card-solo'}`}
-        style={{ '--accent': accent } as CSSProperties}
-      >
-        {hasPanneau && (
+      <div className={`result-card${solo ? ' result-card-solo' : ''}`} style={cardStyle}>
+        {showPanneauFigure && (
           <>
             <div className="rfig">
               <span className="rfig-label">PANNEAU</span>
@@ -32,10 +53,12 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
             <div className="rfig-divider" aria-hidden="true" />
           </>
         )}
-        <div className="rfig">
-          <span className="rfig-label">COLONNE</span>
-          <span className="rfig-num">{person.colonne}</span>
-        </div>
+        {secondaryValue !== null && (
+          <div className="rfig">
+            <span className="rfig-label">{secondaryLabel}</span>
+            <span className="rfig-num">{secondaryValue}</span>
+          </div>
+        )}
       </div>
 
       <button

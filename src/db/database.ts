@@ -9,6 +9,8 @@ export { buildAdresse, decomposeAdresse } from '../utils/adresse';
 const DB_NAME = 'tri-courrier';
 // v1 : store `persons`
 // v2 : ajout ADDITIF du store `rues` (aucune donnée existante n'est touchée)
+// Le champ `logement` (et `colonne` devenu facultatif) n'ajoute ni store ni
+// index : IndexedDB n'a pas de schéma par champ, donc aucune v3 n'est requise.
 const DB_VERSION = 2;
 const STORE = 'persons';
 const RUE_STORE = 'rues';
@@ -16,13 +18,19 @@ const RUE_STORE = 'rues';
 /**
  * Représentation stockée d'une personne : on ajoute un champ normalisé pour
  * accélérer la recherche. Ce champ n'est pas exposé par l'API publique.
- * Les anciennes entrées (v1) n'ont ni `numeroRue` ni `rueId` : ils sont
- * optionnels ici et normalisés à `null` en lecture.
+ * Les anciennes entrées n'ont ni `numeroRue`, ni `rueId`, ni `logement` : ils
+ * sont optionnels ici et normalisés à `null` en lecture. L'ajout du champ
+ * `logement` (et le passage de `colonne` en facultatif) est une simple
+ * évolution de la FORME des objets stockés — IndexedDB n'impose aucun schéma
+ * par champ, donc aucune migration de version n'est nécessaire : les
+ * anciennes fiches (toujours avec une `colonne` numérique) continuent de se
+ * lire exactement comme avant, avec `logement: null`.
  */
-interface StoredPerson extends Omit<Person, 'numeroRue' | 'rueId'> {
+interface StoredPerson extends Omit<Person, 'numeroRue' | 'rueId' | 'logement'> {
   nomNormalise: string;
   numeroRue?: number | null;
   rueId?: string | null;
+  logement?: string | null;
 }
 
 interface StoredRue extends Rue {
@@ -89,8 +97,9 @@ function fromStored(stored: StoredPerson): Person {
     adresse: rest.adresse,
     numeroRue: rest.numeroRue ?? null,
     rueId: rest.rueId ?? null,
-    colonne: rest.colonne,
+    colonne: rest.colonne ?? null,
     panneau: rest.panneau ?? null,
+    logement: rest.logement ?? null,
   };
 }
 

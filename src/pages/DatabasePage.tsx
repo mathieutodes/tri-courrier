@@ -357,7 +357,7 @@ export default function DatabasePage() {
 
         <ul className="card-list">
           {filtered.map((p) => {
-            const color = getColumnColor(p.colonne);
+            const color = p.colonne !== null ? getColumnColor(p.colonne) : null;
             return (
               <li key={p.id} className="card-row">
                 <div className="card-main">
@@ -365,12 +365,17 @@ export default function DatabasePage() {
                   <span className="card-sub">{p.adresse}</span>
                   <span className="card-meta">
                     {p.panneau !== null && <>Panneau {p.panneau}</>}
-                    <span
-                      className="colonne-badge"
-                      style={{ background: color.bg, color: color.fg }}
-                    >
-                      Colonne {p.colonne}
-                    </span>
+                    {p.colonne !== null && color && (
+                      <span
+                        className="colonne-badge"
+                        style={{ background: color.bg, color: color.fg }}
+                      >
+                        Colonne {p.colonne}
+                      </span>
+                    )}
+                    {p.colonne === null && p.logement !== null && p.logement !== '' && (
+                      <span className="logement-badge">Logement {p.logement}</span>
+                    )}
                   </span>
                 </div>
                 <div className="row-actions">

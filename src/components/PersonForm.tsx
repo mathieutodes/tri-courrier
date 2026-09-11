@@ -28,13 +28,19 @@ function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
     }
   }
 
+  // Colonne prioritaire si (cas limite) une fiche avait les deux.
+  const mode: 'colonne' | 'logement' =
+    person && person.colonne === null && person.logement !== null ? 'logement' : 'colonne';
+
   return {
     nom: person?.nom ?? '',
     prenom: person?.prenom ?? '',
     numero,
     rueId,
-    colonne: person ? String(person.colonne) : '',
+    mode,
+    colonne: person?.colonne != null ? String(person.colonne) : '',
     panneau: person && person.panneau !== null ? String(person.panneau) : '',
+    logement: person?.logement ?? '',
   };
 }
 
@@ -46,8 +52,12 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
   const legacyAdresse =
     initial && (fields.numero === '' || fields.rueId === '') ? initial.adresse : null;
 
-  function set<K extends keyof RawPersonForm>(key: K, value: string) {
+  function set<K extends Exclude<keyof RawPersonForm, 'mode'>>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  function setMode(mode: RawPersonForm['mode']) {
+    setFields((f) => ({ ...f, mode }));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -125,32 +135,90 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
         )}
       </label>
 
-      <label className="field">
-        <span className="field-label">Colonne * (1 à 16)</span>
-        <input
-          className="input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={16}
-          value={fields.colonne}
-          onChange={(e) => set('colonne', e.target.value)}
-        />
-        {errors.colonne && <span className="field-error">{errors.colonne}</span>}
-      </label>
+      <div className="field">
+        <span className="field-label">Localisation *</span>
+        <div className="mode-toggle" role="tablist" aria-label="Type de localisation">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={fields.mode === 'colonne'}
+            className={`mode-toggle-btn${fields.mode === 'colonne' ? ' active' : ''}`}
+            onClick={() => setMode('colonne')}
+          >
+            Colonne
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={fields.mode === 'logement'}
+            className={`mode-toggle-btn${fields.mode === 'logement' ? ' active' : ''}`}
+            onClick={() => setMode('logement')}
+          >
+            Panneau + Logement
+          </button>
+        </div>
+        <span className="field-hint">
+          Choisissez soit une colonne, soit un panneau accompagné d'un numéro de logement.
+        </span>
+      </div>
 
-      <label className="field">
-        <span className="field-label">Panneau</span>
-        <input
-          className="input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          value={fields.panneau}
-          onChange={(e) => set('panneau', e.target.value)}
-        />
-        {errors.panneau && <span className="field-error">{errors.panneau}</span>}
-      </label>
+      {fields.mode === 'colonne' ? (
+        <>
+          <label className="field">
+            <span className="field-label">Colonne * (1 à 16)</span>
+            <input
+              className="input"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={16}
+              value={fields.colonne}
+              onChange={(e) => set('colonne', e.target.value)}
+            />
+            {errors.colonne && <span className="field-error">{errors.colonne}</span>}
+          </label>
+
+          <label className="field">
+            <span className="field-label">Panneau</span>
+            <input
+              className="input"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={fields.panneau}
+              onChange={(e) => set('panneau', e.target.value)}
+            />
+            {errors.panneau && <span className="field-error">{errors.panneau}</span>}
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="field">
+            <span className="field-label">Panneau *</span>
+            <input
+              className="input"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={fields.panneau}
+              onChange={(e) => set('panneau', e.target.value)}
+            />
+            {errors.panneau && <span className="field-error">{errors.panneau}</span>}
+          </label>
+
+          <label className="field">
+            <span className="field-label">Numéro de logement *</span>
+            <input
+              className="input"
+              type="text"
+              placeholder="ex. 314, A12"
+              value={fields.logement}
+              onChange={(e) => set('logement', e.target.value)}
+            />
+            {errors.logement && <span className="field-error">{errors.logement}</span>}
+          </label>
+        </>
+      )}
 
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

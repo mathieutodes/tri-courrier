@@ -4,9 +4,16 @@ import { getAllPersons } from '../db/database';
 import { normalizeText } from '../utils/normalizeText';
 import { parseColonne, parsePanneau, validatePerson } from '../utils/validation';
 
-export const CSV_HEADER = 'nom,prenom,adresse,colonne,panneau';
+/**
+ * Nouveau format exporté. L'import reste compatible avec l'ancien ordre
+ * (`nom,prenom,adresse,colonne,panneau`) et tout ordre de colonnes : le CSV
+ * est lu par NOM d'en-tête (Papa.parse `header: true`), jamais par position.
+ * Un ancien fichier sans colonne `logement` importe donc exactement comme
+ * avant, avec `logement = null`.
+ */
+export const CSV_HEADER = 'nom,prenom,adresse,panneau,colonne,logement';
 
-const FIELDS = ['nom', 'prenom', 'adresse', 'colonne', 'panneau'] as const;
+const FIELDS = ['nom', 'prenom', 'adresse', 'colonne', 'panneau', 'logement'] as const;
 type CsvField = (typeof FIELDS)[number];
 
 export type ImportStatus = 'valid' | 'invalid' | 'duplicate';
@@ -15,7 +22,14 @@ export interface ImportRow {
   line: number;
   status: ImportStatus;
   errors: string[];
-  display: { nom: string; prenom: string; adresse: string; colonne: string; panneau: string };
+  display: {
+    nom: string;
+    prenom: string;
+    adresse: string;
+    colonne: string;
+    panneau: string;
+    logement: string;
+  };
   value?: PersonInput;
 }
 
@@ -59,6 +73,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       adresse: get('adresse'),
       colonne: get('colonne'),
       panneau: get('panneau'),
+      logement: get('logement'),
     };
 
     const result = validatePerson({
@@ -67,6 +82,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       adresse: display.adresse,
       colonne: display.colonne,
       panneau: display.panneau,
+      logement: display.logement,
     });
 
     const line = index + 2; // +1 en-tête, +1 pour un index humain
@@ -124,8 +140,9 @@ export function personsToCSV(persons: Person[]): string {
         csvCell(p.nom),
         csvCell(p.prenom ?? ''),
         csvCell(p.adresse),
-        String(p.colonne),
         p.panneau === null ? '' : String(p.panneau),
+        p.colonne === null ? '' : String(p.colonne),
+        csvCell(p.logement ?? ''),
       ].join(','),
     );
   }
@@ -140,6 +157,7 @@ export function personsToJSON(persons: Person[]): string {
     adresse: p.adresse,
     colonne: p.colonne,
     panneau: p.panneau,
+    logement: p.logement,
   }));
   return JSON.stringify(clean, null, 2);
 }

@@ -78,6 +78,7 @@ const p = (nom: string, colonne: number, panneau: number | null = null): PersonI
   rueId: null,
   colonne,
   panneau,
+  logement: null,
 });
 
 beforeEach(() => {
