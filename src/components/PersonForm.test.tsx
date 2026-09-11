@@ -645,4 +645,105 @@ describe('PersonForm', () => {
       expect(numeroInput.getAttribute('autocomplete')).toBeNull();
     });
   });
+
+  describe('BUG 3 (suite) — correction STRUCTURELLE : Remarque hors du <form> Nom/Prénom/Numéro/Rue', () => {
+    it("1. Remarque n'est plus un descendant DOM du <form> contenant Nom/Prénom/Numéro/Rue", () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const nomInput = screen.getByLabelText(/^nom/i) as HTMLInputElement;
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+
+      const identityForm = nomInput.closest('form');
+      expect(identityForm).not.toBeNull();
+      // Le formulaire qui contient Nom ne contient PAS la textarea Remarque :
+      // elle est un frère (sibling) dans le DOM, pas un enfant.
+      expect(identityForm?.contains(textarea)).toBe(false);
+      // Remontée depuis la textarea elle-même : aucun ancêtre <form>.
+      expect(textarea.closest('form')).toBeNull();
+    });
+
+    it('la textarea reste formellement associée au même formulaire via `form="person-form"` (mécanisme HTML standard, pas un hack)', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const nomInput = screen.getByLabelText(/^nom/i) as HTMLInputElement;
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      const identityForm = nomInput.closest('form');
+
+      expect(textarea.getAttribute('form')).toBe('person-form');
+      // Propriété IDL `form` : l'élément associé, même hors de l'arbre DOM du <form>.
+      expect(textarea.form).toBe(identityForm);
+    });
+
+    it('7. un seul bouton ENREGISTRER est présent pour l’utilisateur (aucun second formulaire, aucune double sauvegarde)', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      expect(screen.getAllByRole('button', { name: /^enregistrer$/i })).toHaveLength(1);
+      // Un seul <form> dans tout le composant.
+      expect(document.querySelectorAll('form')).toHaveLength(1);
+    });
+
+    it('2. Remarque conserve tous ses attributs de saisie native malgré la restructuration', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      expect(textarea.getAttribute('autocomplete')).toBe('off');
+      expect(textarea.getAttribute('autocorrect')).toBe('on');
+      expect(textarea.getAttribute('autocapitalize')).toBe('sentences');
+      expect(textarea.getAttribute('spellcheck')).toBe('true');
+    });
+
+    it('3. modifier Remarque puis Enregistrer (bouton hors du <form>) sauvegarde bien la remarque', () => {
+      const onSubmit = vi.fn();
+      render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
+
+      fireEvent.change(screen.getByLabelText(/^nom/i), { target: { value: 'DUPONT' } });
+      fireEvent.change(screen.getByLabelText(/numéro \*/i), { target: { value: '3' } });
+      fireEvent.change(screen.getByLabelText(/^rue/i), { target: { value: 'r1' } });
+      fireEvent.change(screen.getByLabelText(/colonne \*/i), { target: { value: '5' } });
+      fireEvent.change(screen.getByLabelText(/remarque/i), {
+        target: { value: 'Sonner deux fois' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(onSubmit.mock.calls[0][0].remarque).toBe('Sonner deux fois');
+    });
+
+    it('4. modifier simultanément une information Person ET Remarque sauvegarde bien les deux ensemble', () => {
+      const onSubmit = vi.fn();
+      render(
+        <PersonForm
+          initial={existingPerson({ colonne: 5 })}
+          rues={rues}
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      // Une vraie info Person (colonne) ET Remarque, dans le même geste.
+      fireEvent.change(screen.getByLabelText(/colonne \*/i), { target: { value: '9' } });
+      fireEvent.change(screen.getByLabelText(/remarque/i), {
+        target: { value: 'Interphone cassé' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      const value = onSubmit.mock.calls[0][0];
+      expect(value.colonne).toBe(9);
+      expect(value.remarque).toBe('Interphone cassé');
+    });
+
+    it('6. la validation existante fonctionne toujours malgré la restructuration (ex. panneau obligatoire avec logement)', () => {
+      const onSubmit = vi.fn();
+      render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
+
+      fireEvent.change(screen.getByLabelText(/^nom/i), { target: { value: 'DUPONT' } });
+      fireEvent.change(screen.getByLabelText(/numéro \*/i), { target: { value: '3' } });
+      fireEvent.change(screen.getByLabelText(/^rue/i), { target: { value: 'r1' } });
+      fireEvent.click(screen.getByRole('tab', { name: 'Panneau + Logement' }));
+      fireEvent.change(screen.getByLabelText(/numéro de logement/i), { target: { value: '314' } });
+      // panneau volontairement laissé vide + une remarque saisie en même temps
+      fireEvent.change(screen.getByLabelText(/remarque/i), { target: { value: 'Test' } });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getByText(/panneau est obligatoire/i)).not.toBeNull();
+    });
+  });
 });

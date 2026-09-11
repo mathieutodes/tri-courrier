@@ -165,7 +165,18 @@ export default function PersonForm({
   }
 
   return (
-    <form className="form" onSubmit={handleSubmit} noValidate>
+    <>
+      {/* Remarque et les boutons d'action sont volontairement rendus HORS de
+          ce <form> (voir plus bas) — Nom/Prénom/Numéro/Rue restent seuls à
+          l'intérieur. Le `<form id="person-form">` reste l'UNIQUE formulaire
+          de la page (aucun formulaire imbriqué, aucun second bouton
+          Enregistrer, aucune deuxième sauvegarde) : les éléments extérieurs
+          s'y rattachent via l'attribut HTML standard `form="person-form"`
+          (voir la textarea Remarque et le bouton ENREGISTRER plus bas), qui
+          les associe au formulaire exactement comme s'ils y étaient imbriqués
+          — `handleSubmit` continue de recevoir la totalité de `fields` via le
+          state React, inchangé. */}
+      <form id="person-form" className="form" onSubmit={handleSubmit} noValidate>
       <label className="field">
         <span className="field-label">Nom *</span>
         <input
@@ -322,21 +333,25 @@ export default function PersonForm({
         />
         <span>Réexpédition</span>
       </label>
+      </form>
 
+      {/* Remarque : NON descendante du <form> ci-dessus (voir commentaire en
+          tête de composant) — correction structurelle, en plus des attributs
+          déjà en place, pour que Safari/iOS n'ait plus la moindre raison de
+          rattacher ce champ de texte libre au groupe Nom/Prénom/Numéro/Rue
+          qu'il interprète comme une fiche Contact. `form="person-form"`
+          l'associe malgré tout formellement au bon formulaire (mécanisme
+          HTML standard, pas un hack) : sa valeur continue de vivre dans le
+          même state React (`fields.remarque`) que tous les autres champs, et
+          `handleSubmit` la reçoit exactement comme avant. Visuellement et
+          fonctionnellement, rien ne change pour l'utilisateur — toujours la
+          même position, entre Réexpédition et les boutons. */}
       <label className="field">
         <span className="field-label">Remarque</span>
         <textarea
           ref={remarqueRef}
+          form="person-form"
           className="input textarea"
-          // Identifiant sémantiquement NEUTRE, volontairement distinct de
-          // "nom"/"prenom"/"adresse"/toute sémantique de contact : sans
-          // `name`/`id` explicite, Safari doit deviner le rôle du champ à
-          // partir du contexte — ici un `<form>` qui contient Nom, Prénom,
-          // Numéro et Rue juste au-dessus. Cette combinaison ressemble
-          // fortement à un formulaire de fiche contact aux yeux de
-          // l'heuristique d'auto-remplissage d'iOS/Safari, qui peut alors
-          // proposer de préremplir Remarque avec une donnée de Contacts. Un
-          // identifiant explicite de note libre retire cette ambiguïté.
           name="freeform-note"
           id="freeform-note"
           rows={3}
@@ -352,10 +367,10 @@ export default function PersonForm({
           // Concerne UNIQUEMENT ce champ : Nom/Prénom/Numéro/Rue ne sont pas
           // modifiés.
           //
-          // Limite connue : Safari applique aussi ses propres heuristiques et
-          // peut, dans certains cas, ignorer `autocomplete="off"` — cet
-          // attribut réduit la probabilité de détection Contact, il ne la
-          // supprime pas avec certitude à lui seul.
+          // Limite connue : même hors du <form>, Safari applique aussi ses
+          // propres heuristiques et peut continuer à détecter un Contact
+          // dans certains cas — cette restructuration réduit encore les
+          // signaux disponibles, elle n'en garantit pas la disparition.
           autoComplete="off"
           autoCorrect="on"
           autoCapitalize="sentences"
@@ -368,10 +383,15 @@ export default function PersonForm({
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           ANNULER
         </button>
-        <button type="submit" className="btn btn-primary">
+        {/* `form="person-form"` : ce bouton n'est plus un descendant du
+            <form> (Remarque le sépare visuellement de lui dans le DOM), mais
+            reste le SEUL et UNIQUE déclencheur de `handleSubmit` — associé
+            formellement au même formulaire, toujours un seul enregistrement,
+            aucune sauvegarde dupliquée. */}
+        <button type="submit" form="person-form" className="btn btn-primary">
           ENREGISTRER
         </button>
       </div>
-    </form>
+    </>
   );
 }
