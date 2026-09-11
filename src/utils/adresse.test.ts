@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAdresse, decomposeAdresse } from './adresse';
+import { buildAdresse, decomposeAdresse, splitAdresse } from './adresse';
 import type { Rue } from '../types/rue';
 
 const rues: Rue[] = [
@@ -28,5 +28,29 @@ describe('decomposeAdresse', () => {
     expect(decomposeAdresse('Rue Victor Hugo', rues)).toBeNull();
     expect(decomposeAdresse('12bis Rue Victor Hugo', rues)).toBeNull();
     expect(decomposeAdresse('', rues)).toBeNull();
+  });
+});
+
+describe('splitAdresse', () => {
+  it('décompose "<n> <rue>" SANS consulter un catalogue (rue inconnue acceptée)', () => {
+    expect(splitAdresse('35 Rue Claude Kogan')).toEqual({
+      numeroRue: 35,
+      rueNom: 'Rue Claude Kogan',
+    });
+  });
+
+  it('nettoie les espaces superflus du nom de rue obtenu', () => {
+    expect(splitAdresse('12   Rue   des   Lilas  ')).toEqual({
+      numeroRue: 12,
+      rueNom: 'Rue des Lilas',
+    });
+  });
+
+  it('renvoie null sans numéro en tête, avec bis/ter/lettre, ou adresse vide', () => {
+    expect(splitAdresse('Rue Victor Hugo')).toBeNull();
+    expect(splitAdresse('12bis Rue Victor Hugo')).toBeNull();
+    expect(splitAdresse('12 A Rue Victor Hugo')).not.toBeNull(); // "A Rue..." devient le nom de rue
+    expect(splitAdresse('')).toBeNull();
+    expect(splitAdresse('0 Rue Victor Hugo')).toBeNull();
   });
 });

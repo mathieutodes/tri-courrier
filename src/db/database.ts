@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Person, PersonInput } from '../types/person';
 import type { Rue } from '../types/rue';
 import { cleanStored, normalizeText } from '../utils/normalizeText';
+import { splitAdresse } from '../utils/adresse';
 
 export { buildAdresse, decomposeAdresse } from '../utils/adresse';
 
@@ -168,6 +169,81 @@ export async function updateRue(rue: Rue): Promise<void> {
 export async function deleteRue(id: string): Promise<void> {
   const db = await getDB();
   await db.delete(RUE_STORE, id);
+}
+
+/**
+ * Ajoute plusieurs personnes (import CSV) en résolvant automatiquement leur
+ * rue à partir de l'adresse — utilisé pour que les rues des adresses
+ * importées apparaissent dans « Gérer les rues » sans intervention manuelle.
+ *
+ * Pour chaque personne dont `rueId` n'est pas déjà renseigné :
+ *  1. décompose `adresse` en `"<numéro> <nom de rue>"` (best-effort, ignore
+ *     silencieusement les adresses qui ne suivent pas ce format — l'adresse
+ *     d'origine est alors conservée telle quelle, sans blocage) ;
+ *  2. compare le nom de rue obtenu aux rues déjà enregistrées via une
+ *     comparaison NORMALISÉE (minuscules, sans accents, espaces réduits) ;
+ *  3. réutilise la rue existante si elle correspond, sinon planifie sa
+ *     création.
+ *
+ * Les rues à créer sont d'abord DÉDUPLIQUÉES EN MÉMOIRE (par nom normalisé)
+ * avant la moindre écriture : un import de plusieurs centaines de personnes
+ * partageant la même rue ne crée cette rue qu'UNE SEULE FOIS. Toutes les
+ * écritures (rues + personnes) se font dans une unique transaction
+ * multi-store : soit tout est enregistré, soit rien ne l'est.
+ */
+export async function bulkAddPersonsResolvingRues(
+  inputs: PersonInput[],
+): Promise<{ count: number; ruesCreated: number }> {
+  const db = await getDB();
+  const tx = db.transaction([RUE_STORE, STORE], 'readwrite');
+  const rueStore = tx.objectStore(RUE_STORE);
+  const personStore = tx.objectStore(STORE);
+
+  const existingRues = await rueStore.getAll();
+  const byNormalizedNom = new Map<string, StoredRue>();
+  for (const rue of existingRues) byNormalizedNom.set(rue.nomNormalise, rue);
+
+  interface PendingLink {
+    index: number;
+    numeroRue: number;
+    norm: string;
+  }
+  const pending: PendingLink[] = [];
+  // Normalisé -> nom "propre" à créer (1ʳᵉ orthographe rencontrée dans le lot).
+  const toCreate = new Map<string, string>();
+
+  inputs.forEach((input, index) => {
+    if (input.rueId !== null) return; // déjà résolu, on ne touche pas
+    const split = splitAdresse(input.adresse);
+    if (!split) return; // adresse non décomposable : jamais bloquant
+    const norm = normalizeText(split.rueNom);
+    pending.push({ index, numeroRue: split.numeroRue, norm });
+    if (!byNormalizedNom.has(norm) && !toCreate.has(norm)) {
+      toCreate.set(norm, split.rueNom);
+    }
+  });
+
+  for (const [norm, nom] of toCreate) {
+    const rue: Rue = { id: newId(), nom };
+    const stored = toStoredRue(rue);
+    await rueStore.put(stored);
+    byNormalizedNom.set(norm, stored);
+  }
+
+  const resolved = inputs.slice();
+  for (const { index, numeroRue, norm } of pending) {
+    const rue = byNormalizedNom.get(norm);
+    if (!rue) continue; // garde-fou : ne devrait jamais arriver
+    resolved[index] = { ...resolved[index], numeroRue, rueId: rue.id };
+  }
+
+  for (const input of resolved) {
+    const person: Person = { id: newId(), ...input };
+    await personStore.put(toStored(person));
+  }
+
+  await tx.done;
+  return { count: resolved.length, ruesCreated: toCreate.size };
 }
 
 // ---------- Recherche ----------

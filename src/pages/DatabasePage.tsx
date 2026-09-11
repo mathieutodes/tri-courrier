@@ -3,6 +3,7 @@ import { navigate } from '../App';
 import {
   addPersonSynced,
   bulkAddPersonsSynced,
+  bulkImportPersonsSynced,
   deleteAllPersonsSynced,
   deletePersonSynced,
   ensurePersonsLoaded,
@@ -148,11 +149,14 @@ export default function DatabasePage() {
   async function confirmImport() {
     if (view.kind !== 'import') return;
     const { toImport, duplicateCount } = view.preview;
-    await bulkAddPersonsSynced(toImport);
+    // Résout / crée automatiquement les rues détectées dans les adresses
+    // importées (dédupliquées, jamais de doublon) — voir personStore.ts.
+    const { ruesCreated } = await bulkImportPersonsSynced(toImport);
     setView({ kind: 'list' });
     flash(
       `${toImport.length} personne(s) importée(s)` +
-        (duplicateCount > 0 ? `, ${duplicateCount} doublon(s) ignoré(s).` : '.'),
+        (duplicateCount > 0 ? `, ${duplicateCount} doublon(s) ignoré(s)` : '') +
+        (ruesCreated > 0 ? `, ${ruesCreated} nouvelle(s) rue(s) créée(s).` : '.'),
     );
   }
 

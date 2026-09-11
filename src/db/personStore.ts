@@ -3,11 +3,13 @@ import type { Person, PersonInput } from '../types/person';
 import {
   addPerson,
   bulkAddPersons,
+  bulkAddPersonsResolvingRues,
   deleteAllPersons,
   deletePerson,
   getAllPersons,
   updatePerson,
 } from './database';
+import { refreshRues } from './rueStore';
 
 /**
  * Store en mémoire au-dessus d'IndexedDB.
@@ -93,6 +95,22 @@ export async function bulkAddPersonsSynced(inputs: PersonInput[]): Promise<numbe
   const count = await bulkAddPersons(inputs);
   await refreshPersons();
   return count;
+}
+
+/**
+ * Import CSV : ajoute plusieurs personnes en résolvant/créant automatiquement
+ * leur rue à partir de l'adresse (voir `bulkAddPersonsResolvingRues`), puis
+ * resynchronise À LA FOIS le cache des personnes ET celui des rues — les
+ * nouvelles rues apparaissent donc immédiatement dans « Gérer les rues » et
+ * dans le sélecteur du formulaire « Ajouter une personne », sans rechargement
+ * de page.
+ */
+export async function bulkImportPersonsSynced(
+  inputs: PersonInput[],
+): Promise<{ count: number; ruesCreated: number }> {
+  const result = await bulkAddPersonsResolvingRues(inputs);
+  await Promise.all([refreshPersons(), refreshRues()]);
+  return result;
 }
 
 /**

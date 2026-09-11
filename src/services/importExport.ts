@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import type { Person, PersonInput } from '../types/person';
-import { decomposeAdresse, getAllPersons, getAllRues } from '../db/database';
+import { getAllPersons } from '../db/database';
 import { normalizeText } from '../utils/normalizeText';
 import { parseColonne, parsePanneau, validatePerson } from '../utils/validation';
 
@@ -45,7 +45,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
     transformHeader: mapHeader,
   });
 
-  const [existing, rues] = await Promise.all([getAllPersons(), getAllRues()]);
+  const existing = await getAllPersons();
   const seen = new Set<string>(existing.map((p) => dupKey(p.nom, p.prenom, p.adresse)));
 
   const rows: ImportRow[] = [];
@@ -81,15 +81,10 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       return;
     }
 
-    // Best-effort : si l'adresse importée correspond à "<n> <rue connue>",
-    // on renseigne numeroRue + rueId. Sinon on garde l'adresse telle quelle,
-    // sans jamais bloquer la ligne.
-    const decomposed = decomposeAdresse(result.value.adresse, rues);
-    if (decomposed) {
-      result.value.numeroRue = decomposed.numeroRue;
-      result.value.rueId = decomposed.rueId;
-    }
-
+    // `numeroRue` / `rueId` restent à `null` à ce stade (l'aperçu ne doit rien
+    // écrire). Leur résolution — réutilisation d'une rue existante ou création
+    // des rues manquantes — se fait uniquement à la confirmation de l'import,
+    // dans `bulkAddPersonsResolvingRues` (voir src/db/database.ts).
     const key = dupKey(result.value.nom, result.value.prenom, result.value.adresse);
     if (seen.has(key)) {
       rows.push({ line, status: 'duplicate', errors: [], display, value: result.value });

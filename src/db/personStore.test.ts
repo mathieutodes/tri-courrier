@@ -23,6 +23,22 @@ vi.mock('./database', () => {
       for (const input of inputs) db.push({ id: `id${++seq}`, ...input });
       return inputs.length;
     }),
+    bulkAddPersonsResolvingRues: vi.fn(async (inputs: PersonInput[]) => {
+      // Simule une résolution de rue triviale : toute adresse commençant par
+      // un chiffre "crée" une rue (1 nouvelle par valeur distincte de `adresse`
+      // dans ce mock simplifié — la vraie déduplication normalisée est testée
+      // au niveau de `database.ts`, voir bulkAddPersonsResolvingRues.test.ts).
+      const createdAdresses = new Set<string>();
+      let ruesCreated = 0;
+      for (const input of inputs) {
+        if (/^\d/.test(input.adresse) && !createdAdresses.has(input.adresse)) {
+          createdAdresses.add(input.adresse);
+          ruesCreated += 1;
+        }
+        db.push({ id: `id${++seq}`, ...input });
+      }
+      return { count: inputs.length, ruesCreated };
+    }),
     deleteAllPersons: vi.fn(async () => {
       db = [];
     }),
@@ -33,11 +49,17 @@ vi.mock('./database', () => {
   };
 });
 
+vi.mock('./rueStore', () => ({
+  refreshRues: vi.fn(async () => {}),
+}));
+
 import * as database from './database';
+import * as rueStore from './rueStore';
 import {
   __resetPersonStoreForTests,
   addPersonSynced,
   bulkAddPersonsSynced,
+  bulkImportPersonsSynced,
   deleteAllPersonsSynced,
   deletePersonSynced,
   getPersonsSnapshot,
@@ -150,6 +172,36 @@ describe('personStore', () => {
     it('fonctionne aussi quand la base est déjà vide', async () => {
       await expect(deleteAllPersonsSynced()).resolves.toBeUndefined();
       expect(getPersonsSnapshot()).toEqual([]);
+    });
+  });
+
+  describe('bulkImportPersonsSynced (import CSV)', () => {
+    it('délègue la résolution des rues à bulkAddPersonsResolvingRues', async () => {
+      const result = await bulkImportPersonsSynced([
+        p('DUPONT', 5),
+        { ...p('MARTIN', 2), adresse: '35 Rue Claude Kogan' },
+      ]);
+
+      expect(database.bulkAddPersonsResolvingRues).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ count: 2, ruesCreated: 1 });
+    });
+
+    it('rend les personnes importées disponibles immédiatement dans le cache', async () => {
+      await bulkImportPersonsSynced([p('DUPONT', 5), p('MARTIN', 2)]);
+      expect(getPersonsSnapshot().map((x) => x.nom).sort()).toEqual(['DUPONT', 'MARTIN']);
+    });
+
+    it('rafraîchit aussi le rueStore (les nouvelles rues sont visibles immédiatement)', async () => {
+      await bulkImportPersonsSynced([{ ...p('DUPONT', 5), adresse: '35 Rue Claude Kogan' }]);
+      expect(rueStore.refreshRues).toHaveBeenCalledTimes(1);
+    });
+
+    it('notifie les abonnés du personStore', async () => {
+      const listener = vi.fn();
+      const unsub = subscribePersons(listener);
+      await bulkImportPersonsSynced([p('DUPONT', 5)]);
+      expect(listener).toHaveBeenCalledTimes(1);
+      unsub();
     });
   });
 });
