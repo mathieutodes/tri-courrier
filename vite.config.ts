@@ -36,13 +36,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // wasm/gz : moteur OCR local (mode SCAN, prototype) servi depuis
-        // public/tesseract/ — précaché comme le reste de l'app pour un
-        // fonctionnement 100% hors-ligne (aucun appel réseau/CDN).
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm,gz}'],
-        // Le moteur OCR WASM dépasse la limite par défaut (2 Mo) : on l'augmente
-        // pour qu'il soit bien précaché plutôt que silencieusement ignoré.
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
       },
