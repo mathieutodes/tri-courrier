@@ -1,37 +1,71 @@
 /* =========================================================================
-   Tri Courrier — système visuel unique
-   Esthétique : application iOS moderne, thème CLAIR sobre, minimaliste, lisible.
+   Tri Courrier — système visuel "Liquid Glass"
+   Esthétique : application iOS moderne, thème CLAIR, surfaces translucides,
+   verre dépoli, cartes arrondies, ombres douces, accent bleu iOS.
+   Priorité absolue : lisibilité totale pendant une tournée — le texte et les
+   icônes restent TOUJOURS parfaitement nets (le flou ne s'applique jamais
+   qu'au FOND derrière une surface, jamais à son contenu).
    ========================================================================= */
 
 :root {
   color-scheme: light;
 
-  /* Neutres */
-  --bg: #ffffff; /* fond général blanc */
-  --surface: #ffffff; /* cartes / champs — séparés du fond par bordure + ombre légère */
-  --surface-2: #f5f5f6; /* fond très légèrement grisé (élévation, états pressés) */
-  --text: #0a0a0b; /* texte principal, quasi noir */
-  --text-2: #6b7280; /* gris secondaire */
-  --text-3: #9aa0a6; /* gris tertiaire (placeholders) */
-  --border: #ececed; /* bordures très discrètes */
-  --border-strong: #dcdce0;
+  /* ---- Fond général : blanc / bleu glacier / gris bleuté très clair ---- */
+  --bg-0: #eef3f9;
+  --bg-1: #f6f8fb;
 
-  /* Actions — bouton principal sombre, très lisible sur fond clair */
-  --accent: #111113;
-  --accent-press: #000000;
-  --accent-text: #ffffff;
-  --danger: #d92d20; /* rouge lisible en texte / bordure ET en bouton plein */
+  /* ---- Neutres / texte ---- */
+  --text: #0b1220; /* texte principal, quasi noir à peine bleuté */
+  --text-2: #5b6472; /* gris bleuté secondaire */
+  --text-3: #8b93a1; /* gris bleuté tertiaire (placeholders) */
+  --border: rgba(15, 23, 42, 0.08); /* bordures très discrètes */
+  --border-strong: rgba(15, 23, 42, 0.14);
+
+  /* ---- Surfaces "solides" (fallback / zones longues sans flou — perf) ---- */
+  --surface: #ffffff;
+  --surface-2: #f2f5f9;
+
+  /* ---- Système Liquid Glass ----
+     Utilisé AVEC MODÉRATION : uniquement sur un petit nombre d'éléments
+     "hero" (capsule de recherche, bouton flottant, carte résultat, bandeau
+     réexpédition, bloc remarque, modales). Jamais sur les listes longues
+     (voir plus bas "zones volontairement SANS flou — performance iPhone"). */
+  --glass-bg: rgba(255, 255, 255, 0.58); /* surface glass "hero" */
+  --glass-bg-strong: rgba(255, 255, 255, 0.78); /* surface glass dense (appbar, inputs) */
+  --glass-bg-light: rgba(255, 255, 255, 0.72); /* cartes de liste — PAS de blur (perf) */
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-soft: rgba(255, 255, 255, 0.5);
+  --glass-shadow-sm: 0 1px 2px rgba(30, 41, 59, 0.05), 0 4px 14px -6px rgba(30, 41, 59, 0.1);
+  --glass-shadow: 0 1px 1px rgba(30, 41, 59, 0.04), 0 14px 34px -10px rgba(30, 41, 59, 0.16);
+  --blur-md: 20px;
+  --blur-sm: 12px;
+
+  /* ---- Accent bleu iOS : actions principales ---- */
+  --accent-blue: #0a84ff;
+  --accent-blue-press: #006edc;
+  --accent-blue-text: #ffffff;
+  --accent-blue-soft: rgba(10, 132, 255, 0.12);
+
+  /* ---- Accent neutre : fallback carte résultat SANS colonne (jamais de
+     couleur de colonne inventée) — distinct du bleu d'action, volontairement
+     sobre. Peut être surchargé par instance via `--card-accent` inline
+     (voir SearchResultView, couleur de colonne). ---- */
+  --accent: #1c2433;
+  --card-accent: var(--accent);
+
+  --danger: #d92d20;
   --danger-btn: #d92d20;
   --danger-surface: #fef3f2;
   --danger-border: #fda29b;
 
-  /* Rayons cohérents */
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 18px;
+  /* ---- Rayons — généreux, esprit iOS ---- */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
   --r-full: 999px;
 
-  /* Espacements */
+  /* ---- Espacements ---- */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -39,25 +73,36 @@
   --s-5: 24px;
   --s-6: 32px;
 
-  /* Contrôles tactiles */
+  /* ---- Contrôles tactiles ---- */
   --control-h: 54px;
 
-  /* Focus : bordure sombre nette + anneau discret */
-  --focus-border: #111113;
-  --focus-ring: 0 0 0 3px rgba(17, 17, 19, 0.08);
+  /* ---- Focus : anneau bleu doux ---- */
+  --focus-border: var(--accent-blue);
+  --focus-ring: 0 0 0 4px var(--accent-blue-soft);
 
-  /* Ombres — très légères, uniquement pour la hiérarchie */
-  --shadow-sm: 0 1px 2px rgba(16, 18, 20, 0.05);
-  --shadow-card: 0 1px 2px rgba(16, 18, 20, 0.04), 0 6px 16px rgba(16, 18, 20, 0.05);
+  /* ---- Ombres génériques (alias) ---- */
+  --shadow-sm: var(--glass-shadow-sm);
+  --shadow-card: var(--glass-shadow);
 
-  /* Transitions — extrêmement courtes */
-  --t: 120ms ease;
+  /* ---- Transitions — courtes, "liquides" ---- */
+  --t: 160ms cubic-bezier(0.22, 0.8, 0.2, 1);
+  --t-fast: 120ms ease;
 
-  /* Safe areas iOS */
+  /* ---- Safe areas iOS ---- */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Navigateur sans `backdrop-filter` (ou désactivé) : on ne casse jamais la
+   lisibilité — les surfaces "glass" basculent sur un blanc quasi opaque,
+   toujours nettement détachées du fond, sans aucun flou. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.92);
+    --glass-bg-strong: rgba(255, 255, 255, 0.96);
+  }
 }
 
 * {
@@ -76,9 +121,16 @@ body,
   height: 100%;
 }
 
+/* Fond général : base très claire + gradients radiaux extrêmement doux et
+   diffus (bleu glacier / gris bleuté). Aucun `background-attachment: fixed`
+   (coûteux sur Safari iOS) : le fond défile normalement avec le contenu. */
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg-0);
+  background-image:
+    radial-gradient(1100px 720px at 12% -8%, rgba(112, 168, 255, 0.16), transparent 60%),
+    radial-gradient(900px 680px at 108% 6%, rgba(154, 196, 255, 0.14), transparent 58%),
+    radial-gradient(1000px 820px at 50% 118%, rgba(196, 214, 238, 0.2), transparent 62%);
   color: var(--text);
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial,
@@ -92,17 +144,83 @@ body {
 #root {
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Apparition douce des cartes / modales — un seul aller, jamais en boucle,
+   désactivée ci-dessus pour `prefers-reduced-motion`. */
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 /* =========================================================================
-   Ossature d'écran : barre supérieure NETTE (pas de flou) + corps scrollable
+   Système Liquid Glass — classes/tokens réutilisables.
+   Regroupées (sélecteurs combinés) avec les classes sémantiques qui en ont
+   besoin : un seul jeu de règles, partagé, sans dupliquer les déclarations
+   ni toucher au balisage existant.
+   ========================================================================= */
+
+/* glass-surface : bande/zone translucide DENSE, sans forcément de blur propre
+   (utilisée pour l'appbar — le blur y est volontairement omis, voir plus
+   bas « performance »). */
+.glass-surface,
+.appbar {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-soft);
+}
+
+/* glass-button : petit bouton flottant, verre flouté DERRIÈRE lui, icône
+   toujours parfaitement nette (le blur ne s'applique jamais qu'au fond situé
+   derrière l'élément, jamais à son propre contenu). */
+.glass-button,
+.icon-btn {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+/* glass-card : grande carte "hero" (résultat, modale, bandeaux). */
+.glass-card,
+.result-card,
+.modal {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* glass-input : champs de saisie et capsule de recherche — densité plus
+   forte pour garder un texte saisi parfaitement lisible. */
+.glass-input,
+.input,
+.search-field {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+}
+
+/* =========================================================================
+   Ossature d'écran
    ========================================================================= */
 
 .screen {
@@ -111,10 +229,15 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--bg);
+  background: transparent;
 }
 
-/* Barre de navigation : fond OPAQUE (var(--bg)), hairline, aucun backdrop-filter. */
+/* Barre de navigation : teinte "glass" DENSE mais SANS `backdrop-filter`.
+   `position: sticky` + `backdrop-filter` est une combinaison connue pour
+   scintiller/casser sur Safari iOS au scroll (c'est exactement l'effet de
+   flou involontaire déjà signalé sur un bouton) — on obtient un rendu glass
+   cohérent avec un fond quasi opaque et un liseré translucide, sans le coût
+   ni le risque du blur en position sticky. */
 .appbar {
   position: sticky;
   top: 0;
@@ -124,8 +247,10 @@ body {
   gap: var(--s-3);
   padding: calc(var(--safe-top) + 10px) calc(var(--safe-right) + var(--s-4)) 10px
     calc(var(--safe-left) + var(--s-4));
-  background: var(--bg);
   border-bottom: 1px solid var(--border);
+  border-left: none;
+  border-right: none;
+  border-top: none;
 }
 
 .appbar-title {
@@ -147,7 +272,7 @@ body {
   font-size: 16px;
   font-weight: 550;
   cursor: pointer;
-  transition: opacity var(--t);
+  transition: opacity var(--t-fast);
 }
 
 .appbar-back:active {
@@ -198,14 +323,15 @@ body {
   border-radius: var(--r-md);
   cursor: pointer;
   transition:
-    transform var(--t),
+    transform var(--t-fast),
     background var(--t),
     border-color var(--t),
-    opacity var(--t);
+    opacity var(--t-fast),
+    box-shadow var(--t);
 }
 
 .btn:active {
-  transform: scale(0.985);
+  transform: scale(0.98);
 }
 
 .btn:disabled {
@@ -213,34 +339,47 @@ body {
   pointer-events: none;
 }
 
+/* Action principale : bleu iOS plein, se détache nettement des surfaces
+   glass environnantes (jamais de translucidité sur un bouton d'action). */
 .btn-primary {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--accent-blue);
+  color: var(--accent-blue-text);
+  box-shadow: 0 8px 20px -8px rgba(10, 132, 255, 0.55);
 }
 
 .btn-primary:active {
-  background: var(--accent-press);
+  background: var(--accent-blue-press);
+  box-shadow: 0 4px 12px -6px rgba(10, 132, 255, 0.5);
 }
 
+/* Action secondaire : verre léger, bordure fine — se distingue clairement
+   du bleu plein sans jamais paraître actionnable de la même façon. */
 .btn-secondary {
-  background: var(--surface);
+  background: var(--glass-bg-strong);
   color: var(--text);
-  border-color: var(--border-strong);
+  border-color: var(--glass-border);
 }
 
 .btn-secondary:active {
-  background: var(--surface-2);
+  background: var(--glass-bg);
 }
 
-/* Bouton de filtre (adresse…) quand un filtre est actif : bordure d'accent. */
+/* Bouton de filtre (adresse…) quand un filtre est actif : liseré bleu. */
 .filter-btn.active {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
 }
 
+/* Action destructive : TOUJOURS un rouge plein, opaque, sans ambiguïté —
+   jamais de traitement "glass" sur une action de suppression. */
 .btn-danger {
   background: var(--danger-btn);
   color: #ffffff;
+  box-shadow: 0 8px 20px -10px rgba(217, 45, 32, 0.55);
+}
+
+.btn-danger:active {
+  background: #b7241a;
 }
 
 .btn-ghost {
@@ -252,10 +391,12 @@ body {
   font-size: 14px;
 }
 
+/* Boutons "larges" (RECHERCHER, NOUVELLE RECHERCHE…) : capsule quasi pleine,
+   plus proche d'une pilule iOS que d'un simple rectangle arrondi. */
 .btn-lg {
   min-height: 58px;
   font-size: 17px;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
 }
 
 .btn-block {
@@ -269,46 +410,47 @@ body {
   background: none;
   border: none;
   border-radius: var(--r-sm);
-  color: var(--text);
+  color: var(--accent-blue);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--t);
+  transition: background var(--t-fast);
 }
 
 .link-btn:active {
-  background: var(--surface-2);
+  background: var(--accent-blue-soft);
 }
 
 .link-btn.danger {
   color: var(--danger);
 }
 
+.link-btn.danger:active {
+  background: var(--danger-surface);
+}
+
+/* Petit bouton flottant net (accès Base de données) : le verre est flouté
+   DERRIÈRE lui (voir `.glass-button` ci-dessus) — l'icône elle-même, peinte
+   par-dessus, reste toujours parfaitement nette. */
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
   border-radius: var(--r-full);
   color: var(--text-2);
   cursor: pointer;
-  /* Bouton parfaitement net et opaque : aucun flou / effet verre, quel que
-     soit le fond derrière lui. La bordure + l'ombre légère le détachent
-     clairement du fond blanc général (pas de fond transparent/vitré). */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: var(--shadow-sm);
   transition:
-    background var(--t),
-    color var(--t);
+    background var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast);
 }
 
 .icon-btn:active {
-  background: var(--surface-2);
+  background: var(--glass-bg-strong);
   color: var(--text);
+  transform: scale(0.94);
 }
 
 /* =========================================================================
@@ -375,15 +517,18 @@ body {
   gap: var(--s-3);
 }
 
+/* Grande capsule Liquid Glass : translucide, très arrondie, bordure et ombre
+   douces. Un seul blur par écran — élément "hero" de la page recherche. */
 .search-field {
   display: flex;
   align-items: center;
   gap: var(--s-2);
   min-height: 58px;
   padding: 0 var(--s-4);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--glass-shadow-sm);
   transition: border-color var(--t), box-shadow var(--t);
 }
 
@@ -416,6 +561,13 @@ body {
 
 /* =========================================================================
    Suggestions (preshot) & listes de choix
+   ---
+   PERFORMANCE : jusqu'à 200 suggestions peuvent être affichées d'un coup
+   (voir MAX_SUGGESTIONS) — volontairement AUCUN `backdrop-filter` par ligne
+   (un blur par carte, multiplié par des dizaines de lignes qui défilent,
+   est exactement le scénario coûteux à éviter sur Safari iPhone). Chaque
+   carte reste "glass" par sa couleur translucide + bordure + ombre légère
+   uniquement.
    ========================================================================= */
 
 .suggestions,
@@ -423,6 +575,7 @@ body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  gap: var(--s-2);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -433,21 +586,19 @@ body {
   gap: 3px;
   width: 100%;
   min-height: 64px;
-  padding: 13px 2px;
+  padding: 13px var(--s-4);
   text-align: left;
-  background: var(--surface);
-  border: none;
-  border-bottom: 1px solid var(--border);
+  background: var(--glass-bg-light);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--glass-shadow-sm);
   cursor: pointer;
-  transition: background var(--t);
-}
-
-.suggestion:first-child {
-  border-top: 1px solid var(--border);
+  transition: background var(--t-fast), transform var(--t-fast);
 }
 
 .suggestion:active {
   background: var(--surface-2);
+  transform: scale(0.99);
 }
 
 .suggestion-name {
@@ -478,11 +629,11 @@ body {
 }
 
 /* =========================================================================
-   Écran résultat — fond clair, la couleur de colonne devient un ACCENT.
-   `--accent` est injecté en style inline par SearchResultView UNIQUEMENT
-   quand une colonne existe ; sinon (cas PANNEAU + LOGEMENT) la propriété
-   n'est pas surchargée et hérite du token neutre global défini dans :root
-   (aucune couleur de colonne n'est inventée — style neutre conservé).
+   Écran résultat — le plus important pendant la tournée.
+   `--card-accent` est injecté en style inline par SearchResultView
+   UNIQUEMENT quand une colonne existe ; sinon (cas PANNEAU + LOGEMENT) la
+   propriété n'est pas surchargée et hérite du token neutre global défini
+   dans :root (aucune couleur de colonne n'est inventée).
    ========================================================================= */
 
 .result {
@@ -492,7 +643,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   text-align: center;
-  background: var(--bg);
+  background: transparent;
   /* Safe area iOS (Dynamic Island) + respiration : NOM + PRÉNOM nettement
      sous la Dynamic Island, jamais dans une zone floue. */
   padding: calc(var(--safe-top) + clamp(24px, 7vh, 60px))
@@ -512,8 +663,9 @@ body {
   word-break: break-word;
 }
 
-/* Carte de résultat : surface légèrement grisée distincte du fond blanc,
-   bordure d'accent (couleur de colonne), ombre légère pour la hiérarchie. */
+/* Grande carte Liquid Glass : le résultat doit rester TRÈS lisible — la
+   bordure d'accent (couleur de colonne) et le contraste texte priment
+   toujours sur l'effet verre. */
 .result-card {
   flex: 0 1 auto;
   margin: auto 0;
@@ -524,10 +676,10 @@ body {
   justify-content: center;
   gap: clamp(var(--s-3), 4vw, var(--s-5));
   padding: clamp(var(--s-5), 6vw, 40px) var(--s-4);
-  background: var(--surface-2);
-  border: 2px solid var(--accent);
-  border-radius: 28px;
-  box-shadow: var(--shadow-card);
+  border-width: 2px;
+  border-color: var(--card-accent);
+  border-radius: var(--r-xl);
+  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 .result-card-solo {
@@ -558,7 +710,7 @@ body {
   font-size: clamp(3.4rem, 19vw, 6rem);
   font-weight: 900;
   line-height: 0.95;
-  color: var(--accent);
+  color: var(--card-accent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -577,7 +729,7 @@ body {
   width: 2px;
   align-self: stretch;
   margin: clamp(2px, 1vh, 8px) 0;
-  background: var(--accent);
+  background: var(--card-accent);
   opacity: 0.35;
   border-radius: 2px;
 }
@@ -594,9 +746,10 @@ body {
 }
 
 /* Bandeau RÉEXPÉDITION : avertissement sobre, non bloquant (aucune action
-   requise), fond jaune/orange très clair + texte sombre — cohérent avec le
-   thème clair. N'affecte jamais la mise en page de la carte panneau/colonne/
-   logement, qui reste pleinement visible juste en dessous. */
+   requise), jaune/orange clair + texte sombre, aspect légèrement glass —
+   attire l'œil sans jamais devenir agressif. N'affecte jamais la mise en
+   page de la carte panneau/colonne/logement, qui reste pleinement visible
+   juste en dessous. */
 .reexpedition-banner {
   flex: 0 0 auto;
   display: flex;
@@ -605,17 +758,27 @@ body {
   width: 100%;
   max-width: 440px;
   padding: var(--s-3) var(--s-4);
-  background: #fff6df;
-  border: 1px solid #f3cf7c;
-  border-radius: var(--r-md);
-  color: #7a4e00;
+  background: rgba(255, 214, 102, 0.28);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid rgba(217, 164, 6, 0.35);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow-sm);
+  color: #6b4400;
   text-align: left;
+  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .reexpedition-banner {
+    background: #fff2d6;
+  }
 }
 
 .reexpedition-banner svg {
   flex: 0 0 auto;
   margin-top: 1px;
-  color: #b3720a;
+  color: #a06400;
 }
 
 .reexpedition-banner-text {
@@ -638,19 +801,23 @@ body {
   line-height: 1.35;
 }
 
-/* Bloc REMARQUE : sous le panneau/colonne/logement, sobre et lisible, thème
-   clair (texte sombre sur surface légèrement grisée). Le retour à la ligne
-   automatique + `overflow-wrap` empêchent tout débordement horizontal, y
-   compris pour un mot long sans espace, sur iPhone 375px. */
+/* Bloc REMARQUE : sous le panneau/colonne/logement, glass sobre et TRÈS
+   lisible. Le retour à la ligne automatique + `overflow-wrap` empêchent
+   tout débordement horizontal, y compris pour un mot long sans espace, sur
+   iPhone 375px. */
 .remarque-block {
   flex: 0 0 auto;
   width: 100%;
   max-width: 440px;
   padding: var(--s-3) var(--s-4);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow-sm);
   text-align: left;
+  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 .remarque-label {
@@ -686,9 +853,10 @@ body {
 
 .toast {
   padding: 12px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
+  box-shadow: var(--glass-shadow-sm);
   font-size: 14px;
   font-weight: 550;
   color: var(--text);
@@ -734,7 +902,13 @@ body {
   cursor: pointer;
 }
 
-/* Liste des personnes / rues — cartes cohérentes */
+/* Liste des personnes / rues — cartes glass légères.
+   PERFORMANCE : la Base de données peut afficher plusieurs milliers de
+   destinataires. AUCUN `backdrop-filter` ici (voir `.suggestion` plus haut
+   pour le même raisonnement) : chaque carte reste "glass" via une couleur
+   translucide statique, une bordure fine et une ombre très légère — un
+   rendu cohérent avec le reste de l'app, sans coût de composition/flou
+   répété à chaque frame de scroll. */
 .card-list {
   list-style: none;
   margin: 0;
@@ -749,9 +923,10 @@ body {
   flex-direction: column;
   gap: var(--s-2);
   padding: var(--s-4);
-  background: var(--surface);
+  background: var(--glass-bg-light);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
+  box-shadow: var(--glass-shadow-sm);
 }
 
 .card-main {
@@ -807,8 +982,8 @@ body {
   font-weight: 700;
   font-size: 11px;
   letter-spacing: 0.02em;
-  background: #fff6df;
-  border: 1px solid #f3cf7c;
+  background: #fff2d6;
+  border: 1px solid #e9c069;
   color: #7a4e00;
 }
 
@@ -844,7 +1019,8 @@ body {
   font-size: 14px;
 }
 
-/* Zone dangereuse : action destructive, isolée visuellement en bas de page. */
+/* Zone dangereuse : action destructive, isolée visuellement en bas de page.
+   Volontairement PAS "glass" — un rouge clair opaque, sans ambiguïté. */
 .danger-zone {
   display: flex;
   flex-direction: column;
@@ -853,7 +1029,7 @@ body {
   padding: var(--s-4);
   background: var(--danger-surface);
   border: 1px solid var(--danger-border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
 }
 
 .danger-zone-title {
@@ -877,7 +1053,7 @@ body {
   padding: var(--s-3);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   font-size: 14px;
   font-weight: 550;
   color: var(--text);
@@ -893,14 +1069,14 @@ body {
 }
 
 /* Variante non destructive (ex. case « Réexpédition » du formulaire) :
-   même zone tactile confortable, mais accent neutre (pas rouge « danger »). */
+   même zone tactile confortable, mais accent bleu (pas rouge « danger »). */
 .checkbox-row-neutral {
-  background: var(--surface);
-  border-color: var(--border-strong);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
 }
 
 .checkbox-row-neutral input[type='checkbox'] {
-  accent-color: var(--accent);
+  accent-color: var(--accent-blue);
 }
 
 /* =========================================================================
@@ -925,6 +1101,8 @@ body {
   color: var(--text-2);
 }
 
+/* Champs de saisie : grands, arrondis, légèrement translucides — texte
+   parfaitement net (le glass n'affecte que le fond du champ). */
 .input {
   width: 100%;
   min-height: var(--control-h);
@@ -932,11 +1110,9 @@ body {
   font-size: 17px; /* >= 16px : évite le zoom auto iOS */
   font-weight: 500;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   outline: none;
-  transition: border-color var(--t), box-shadow var(--t);
+  transition: border-color var(--t), box-shadow var(--t), background var(--t);
 }
 
 .input::placeholder {
@@ -959,6 +1135,7 @@ body {
 .input:focus {
   border-color: var(--focus-border);
   box-shadow: var(--focus-ring);
+  background: var(--surface);
 }
 
 /* select natif : même allure que .input, chevron discret, adapté iPhone */
@@ -1010,13 +1187,13 @@ select.input {
   font-weight: 650;
   cursor: pointer;
   transition:
-    background var(--t),
-    color var(--t);
+    background var(--t-fast),
+    color var(--t-fast);
 }
 
 .mode-toggle-btn.active {
   background: var(--surface);
-  color: var(--text);
+  color: var(--accent-blue);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1047,9 +1224,9 @@ select.input {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: var(--surface);
+  background: var(--glass-bg-light);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   font-size: 14px;
   font-weight: 550;
 }
@@ -1098,7 +1275,10 @@ select.input {
 }
 
 /* =========================================================================
-   Modale (confirmation)
+   Modale (confirmation / filtres) — effet glass plus marqué : fond
+   translucide + backdrop blur, grandes bordures arrondies, ombre douce.
+   Un seul blur actif à la fois (uniquement pendant l'ouverture d'une
+   modale, jamais en continu au scroll) : coût négligeable sur iPhone.
    ========================================================================= */
 
 .modal-backdrop {
@@ -1112,16 +1292,31 @@ select.input {
      (Dynamic Island / home indicator) sur un iPhone. */
   padding: calc(var(--safe-top) + var(--s-5)) calc(var(--safe-right) + var(--s-5))
     calc(var(--safe-bottom) + var(--s-5)) calc(var(--safe-left) + var(--s-5));
-  background: rgba(10, 10, 12, 0.32);
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
 }
 
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .modal-backdrop {
+    background: rgba(15, 23, 42, 0.55);
+  }
+}
+
+/* La modale elle-même n'a PAS son propre blur (elle repose déjà sur un
+   fond déjà flouté par `.modal-backdrop` — un second blur superposé
+   n'apporterait rien de visible et doublerait inutilement le coût GPU) :
+   une opacité dense (`--glass-bg-strong`, héritée de `.glass-card` ci-dessus
+   via `background`) suffit à la détacher nettement. */
 .modal {
   width: 100%;
   max-width: 360px;
   padding: var(--s-5);
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
+  background: var(--glass-bg-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: var(--r-xl);
+  animation: glass-in 200ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 /* Filtre par adresse : modale plus large, liste scrollable en interne. */

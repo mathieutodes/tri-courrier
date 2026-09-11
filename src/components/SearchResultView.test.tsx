@@ -46,7 +46,7 @@ describe('SearchResultView', () => {
 
     // Couleur de colonne utilisée comme accent.
     const card = document.querySelector('.result-card') as HTMLElement;
-    expect(card.style.getPropertyValue('--accent')).not.toBe('');
+    expect(card.style.getPropertyValue('--card-accent')).not.toBe('');
   });
 
   it('11. cas 3 — panneau + logement : LOGEMENT affiché, jamais COLONNE, aucune couleur inventée', () => {
@@ -62,9 +62,9 @@ describe('SearchResultView', () => {
     expect(screen.getByText('314')).not.toBeNull();
     expect(screen.queryByText('COLONNE')).toBeNull();
 
-    // Pas de colonne -> pas de couleur de colonne injectée (style dark neutre).
+    // Pas de colonne -> pas de couleur de colonne injectée (style neutre).
     const card = document.querySelector('.result-card') as HTMLElement;
-    expect(card.style.getPropertyValue('--accent')).toBe('');
+    expect(card.style.getPropertyValue('--card-accent')).toBe('');
   });
 
   it('sans panneau ni colonne, un logement seul reste affiché (défensif, ne casse jamais l’écran)', () => {

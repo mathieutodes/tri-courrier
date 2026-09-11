@@ -32,11 +32,13 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       ? (person.logement as string)
       : null;
 
-  // La couleur de colonne devient l'accent visuel de la carte. Sans colonne
-  // (cas PANNEAU + LOGEMENT), on n'invente aucune couleur : la carte garde
-  // le style dark neutre existant (fallback CSS vers le token global).
+  // La couleur de colonne devient l'accent visuel de la carte, via la
+  // variable CSS dédiée `--card-accent` (distincte de `--accent-blue`, la
+  // couleur des boutons d'action — les deux ne doivent jamais se confondre).
+  // Sans colonne (cas PANNEAU + LOGEMENT), on n'invente aucune couleur : la
+  // carte garde le style neutre existant (fallback CSS vers le token global).
   const accent = hasColonne ? getColumnAccent(person.colonne as number) : null;
-  const cardStyle = accent ? ({ '--accent': accent } as CSSProperties) : undefined;
+  const cardStyle = accent ? ({ '--card-accent': accent } as CSSProperties) : undefined;
 
   const showPanneauFigure = hasPanneau && secondaryValue !== null;
   const solo = !showPanneauFigure;
@@ -91,7 +93,7 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
       <button
         type="button"
-        className="btn btn-secondary btn-block result-secondary"
+        className="btn btn-primary btn-block result-secondary"
         onClick={() => navigateToEditPerson(person.id)}
       >
         APPORTER UNE PRÉCISION
