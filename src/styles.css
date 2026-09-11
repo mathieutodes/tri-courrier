@@ -1306,19 +1306,13 @@ body {
   text-transform: uppercase;
 }
 
-/* PANNEAU / LOGEMENT : pastille neutre, sans couleur inventée. */
+/* PANNEAU / COLONNE / LOGEMENT : même pastille bleue UNIFORME pour les trois
+   — l'ancienne différenciation (COLONNE en bleu par numéro, PANNEAU/LOGEMENT
+   en gris neutre) a été supprimée au profit d'un seul style bleu partagé,
+   cohérent avec le bleu iOS de l'écran résultat. */
+.colonne-badge,
 .logement-badge,
 .panneau-badge {
-  background: var(--surface-soft);
-  border: 1px solid var(--border-strong);
-  color: var(--text-secondary);
-}
-
-/* COLONNE : palette bleue UNIFORME — l'ancienne différenciation par 16
-   couleurs (une par numéro de colonne) a été supprimée. Toutes les colonnes,
-   quel que soit leur numéro, partagent désormais la même pastille bleu très
-   pâle, cohérente avec le bleu iOS utilisé sur l'écran résultat. */
-.colonne-badge {
   background: var(--surface-blue);
   border: 1px solid rgba(10, 132, 255, 0.22);
   color: var(--ios-blue);
