@@ -562,6 +562,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Numéro de LOGEMENT : chaîne libre pouvant atteindre 4 caractères et plus
+   (ex. "8407", "A12") — taille réduite par rapport à PANNEAU/COLONNE pour
+   toujours tenir dans sa case sur iPhone, sans jamais déborder ni tronquer.
+   Le libellé LOGEMENT garde le même style que PANNEAU (importance équilibrée). */
+.rfig-num-logement {
+  font-size: clamp(2.1rem, 11vw, 3.4rem);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .rfig-divider {
   flex: 0 0 auto;
   width: 2px;

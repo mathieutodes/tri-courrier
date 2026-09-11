@@ -56,7 +56,14 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         {secondaryValue !== null && (
           <div className="rfig">
             <span className="rfig-label">{secondaryLabel}</span>
-            <span className="rfig-num">{secondaryValue}</span>
+            {/* Le logement est une chaîne libre (peut atteindre 4 caractères
+                et plus, ex. "8407", "A12") : taille réduite dédiée pour
+                toujours tenir dans sa case, sans toucher à PANNEAU/COLONNE. */}
+            <span
+              className={`rfig-num${secondaryLabel === 'LOGEMENT' ? ' rfig-num-logement' : ''}`}
+            >
+              {secondaryValue}
+            </span>
           </div>
         )}
       </div>
