@@ -289,4 +289,146 @@ describe('PersonForm', () => {
     );
     expect(document.activeElement).not.toBe(screen.getByLabelText(/remarque/i));
   });
+
+  describe('BUG 1 — régression : ne jamais altérer adresse/rue en ne modifiant que la remarque', () => {
+    // Rue dédiée à ce bloc (id `r1` mais nom distinct de la fixture partagée
+    // en tête de fichier) pour vérifier précisément la reconstruction de
+    // `adresse` à partir de `numeroRue` + le nom réel de la rue.
+    const claudeKoganRues: Rue[] = [{ id: 'r1', nom: 'Rue Claude Kogan' }];
+
+    function claudeKogan(): Person {
+      return {
+        id: 'p1',
+        nom: 'DUPONT',
+        prenom: 'Jean',
+        adresse: '35 Rue Claude Kogan',
+        numeroRue: 35,
+        rueId: 'r1',
+        colonne: 4,
+        panneau: 2,
+        logement: null,
+        reexpedition: false,
+        remarque: null,
+      };
+    }
+
+    it('la rue existante est bien sélectionnée au montage (rues déjà chargées)', () => {
+      render(
+        <PersonForm
+          initial={claudeKogan()}
+          rues={claudeKoganRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r1');
+      expect((screen.getByLabelText(/numéro \*/i) as HTMLInputElement).value).toBe('35');
+    });
+
+    it('modifier uniquement Remarque et enregistrer conserve adresse/numeroRue/rueId/panneau/colonne', () => {
+      const onSubmit = vi.fn();
+      render(
+        <PersonForm
+          initial={claudeKogan()}
+          rues={claudeKoganRues}
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText(/remarque/i), {
+        target: { value: 'Boîte derrière la porte' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      const value = onSubmit.mock.calls[0][0];
+      expect(value.adresse).toBe('35 Rue Claude Kogan');
+      expect(value.numeroRue).toBe(35);
+      expect(value.rueId).toBe('r1');
+      expect(value.panneau).toBe(2);
+      expect(value.colonne).toBe(4);
+      expect(value.remarque).toBe('Boîte derrière la porte');
+    });
+
+    it("rues pas encore chargées au montage (store retardé) : le select est masqué (« Aucune rue enregistrée »), puis la rue se corrige dès que la liste arrive", () => {
+      // Montage AVANT que le store des rues n'ait fini de charger : `rues`
+      // vaut encore `[]` au moment précis où `PersonForm` calcule son état
+      // initial (exactement le scénario du bug). Avec 0 rue, le composant
+      // masque le `<select>` (rien à choisir) — c'est déjà, en soi, le
+      // symptôme visible du bug : la rue "a disparu" du formulaire.
+      const { rerender } = render(
+        <PersonForm initial={claudeKogan()} rues={[]} onSubmit={() => {}} onCancel={() => {}} />,
+      );
+      expect(screen.queryByLabelText(/^rue/i)).toBeNull();
+      expect(screen.getByText(/aucune rue enregistrée/i)).not.toBeNull();
+
+      // Le store termine son chargement : le composant parent transmet enfin
+      // la vraie liste de rues (même `initial`, seule `rues` change).
+      rerender(
+        <PersonForm
+          initial={claudeKogan()}
+          rues={claudeKoganRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r1');
+    });
+
+    it("ne réapplique jamais la rue d'origine si l'utilisateur en a déjà choisi une autre entre-temps", () => {
+      const autreRue: Rue = { id: 'r2', nom: 'Avenue de Paris' };
+      const { rerender } = render(
+        <PersonForm initial={claudeKogan()} rues={[]} onSubmit={() => {}} onCancel={() => {}} />,
+      );
+
+      // Le store termine son chargement : auto-résolution vers la rue d'origine.
+      rerender(
+        <PersonForm
+          initial={claudeKogan()}
+          rues={[...claudeKoganRues, autreRue]}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r1');
+
+      // L'utilisateur choisit lui-même une autre rue.
+      fireEvent.change(screen.getByLabelText(/^rue/i), { target: { value: 'r2' } });
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r2');
+
+      // Un nouveau rendu avec la même liste de rues (ex. rafraîchissement du
+      // store) ne doit JAMAIS revenir en arrière sur le choix de l'utilisateur.
+      rerender(
+        <PersonForm
+          initial={claudeKogan()}
+          rues={[...claudeKoganRues, autreRue]}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r2');
+    });
+  });
+
+  describe('BUG 2 — textarea Remarque : correction automatique native iOS activée', () => {
+    it('déclare explicitement autoCorrect="on", spellCheck et autoCapitalize="sentences"', () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      // Lecture par attribut brut (fiable indépendamment du support des
+      // propriétés IDL `autocapitalize`/`spellcheck` par l'environnement de
+      // test — c'est bien l'attribut HTML rendu que Safari/iOS interprète).
+      expect(textarea.getAttribute('autocapitalize')).toBe('sentences');
+      expect(textarea.getAttribute('spellcheck')).toBe('true');
+      expect(textarea.getAttribute('autocorrect')).toBe('on');
+    });
+
+    it("n'utilise jamais autoCorrect/spellCheck/autoCapitalize désactivés", () => {
+      render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+      const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
+      expect(textarea.getAttribute('autocorrect')).not.toBe('off');
+      expect(textarea.getAttribute('spellcheck')).not.toBe('false');
+      expect(textarea.getAttribute('autocapitalize')).not.toBe('none');
+    });
+  });
 });

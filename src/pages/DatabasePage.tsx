@@ -14,6 +14,7 @@ import {
 } from '../db/personStore';
 import {
   addRueSynced,
+  areRuesLoaded,
   deleteRueSynced,
   ensureRuesLoaded,
   refreshRues,
@@ -87,15 +88,31 @@ export default function DatabasePage({ editPersonId = null }: Props) {
 
   // Ouverture directe de la fiche « Modifier » pour `editPersonId` (bouton
   // « APPORTER UNE PRÉCISION »). On attend que le premier chargement depuis
-  // IndexedDB soit terminé avant de conclure qu'un ID est introuvable — sinon
-  // un rechargement de page (cache encore vide) ferait croire à tort que le
-  // destinataire n'existe plus. Si l'ID reste introuvable une fois les
-  // données chargées (donnée supprimée, lien obsolète) : on reste simplement
-  // sur la liste, sans jamais planter.
+  // IndexedDB soit terminé — pour LES DEUX stores, personnes ET RUES — avant
+  // de faire quoi que ce soit.
+  //
+  // Pourquoi les rues aussi : si on ouvrait `PersonForm` alors que le store
+  // des rues n'a pas encore fini son premier chargement (`rues` encore `[]`
+  // à ce moment précis), `PersonForm` résout son état initial UNE SEULE FOIS
+  // au montage (`useState(() => toRawForm(initial, rues))`) — avec cette
+  // liste de rues vide, `toRawForm` ne peut jamais retrouver `person.rueId`
+  // dedans et initialise le select sur « — Choisir une rue — » (rueId '').
+  // La vraie liste arrive bien plus tard, mais l'état du formulaire ne se
+  // corrige pas tout seul : la rue semble alors avoir disparu, alors que la
+  // donnée en base est parfaitement intacte. Comme les deux stores sont des
+  // caches en mémoire déjà chauds dès qu'ils ont servi une fois dans la
+  // session, ce n'est PAS systématique — d'où un bug intermittent, qui ne
+  // se produit que si aucune page n'a encore déclenché le chargement des
+  // rues (ex. arrivée directe recherche -> résultat -> APPORTER UNE
+  // PRÉCISION, sans être jamais passé par la Base de données).
+  //
+  // Une fois l'ID appliqué une fois, on ne le réévalue plus (voir
+  // `appliedEditPersonId`) : l'utilisateur reste libre de revenir ensuite
+  // sur la liste sans être renvoyé de force sur cette fiche.
   useEffect(() => {
     if (!editPersonId) return;
     if (appliedEditPersonId.current === editPersonId) return;
-    if (!arePersonsLoaded()) return;
+    if (!arePersonsLoaded() || !areRuesLoaded()) return;
     appliedEditPersonId.current = editPersonId;
     const person = persons.find((p) => p.id === editPersonId);
     if (person) {
@@ -104,7 +121,7 @@ export default function DatabasePage({ editPersonId = null }: Props) {
     // Consomme le lien profond : l'URL redevient `#/database`, pour qu'un
     // rechargement ultérieur ne rouvre pas cette fiche indéfiniment.
     navigate('database');
-  }, [editPersonId, persons]);
+  }, [editPersonId, persons, rues]);
 
   // Filtre par ADRESSE COMPLÈTE (page Base de données uniquement) : source =
   // person.adresse, jamais le store `rues`. Recalculé à chaque changement de

@@ -70,6 +70,28 @@ export default function PersonForm({
   const [errors, setErrors] = useState<PersonFormErrors>({});
   const remarqueRef = useRef<HTMLTextAreaElement>(null);
 
+  // Filet de sécurité (défense en profondeur) : si ce formulaire a malgré
+  // tout été monté avant que le store des rues ait fini son premier
+  // chargement (`rues` encore vide à l'instant précis du montage), l'état
+  // initial ci-dessus n'a pas pu résoudre `initial.rueId` — le select rue
+  // démarre alors vide alors que la donnée existe bel et bien. On mémorise
+  // cet ID "en attente" une seule fois au montage, puis on le réconcilie dès
+  // que `rues` le contient réellement — mais UNIQUEMENT si l'utilisateur n'a
+  // rien choisi entre-temps (`fields.rueId` toujours vide) : on ne doit
+  // jamais écraser un choix volontaire. Appliqué au plus une fois.
+  const pendingRueId = useRef<string | null>(
+    initial && initial.rueId && !rues.some((r) => r.id === initial.rueId) ? initial.rueId : null,
+  );
+
+  useEffect(() => {
+    const target = pendingRueId.current;
+    if (!target) return;
+    const rue = rues.find((r) => r.id === target);
+    if (!rue) return; // toujours pas chargée : on retentera au prochain changement de `rues`
+    pendingRueId.current = null;
+    setFields((f) => (f.rueId === '' ? { ...f, rueId: rue.id } : f));
+  }, [rues]);
+
   useEffect(() => {
     if (!autoFocusRemarque) return;
     // Best-effort, déclenché par l'intention utilisateur du clic « APPORTER
@@ -283,6 +305,18 @@ export default function PersonForm({
           placeholder="ex. Boîte au nom de MARTIN, BAL derrière la porte…"
           value={fields.remarque}
           onChange={(e) => set('remarque', e.target.value)}
+          // Champ de texte libre en langage naturel : on veut explicitement
+          // le clavier NATIF complet de l'iPhone (autocorrection, suggestions,
+          // majuscule automatique en début de phrase) — jamais désactivé, et
+          // jamais de correction "maison". Déclaré explicitement plutôt que
+          // laissé aux valeurs par défaut du moteur : ce champ reçoit aussi le
+          // focus par programmation (`autoFocusRemarque`), un cas où Safari
+          // applique parfois ses réglages de saisie de façon moins fiable si
+          // les attributs ne sont pas déjà présents sur l'élément avant le
+          // `.focus()`.
+          autoCorrect="on"
+          autoCapitalize="sentences"
+          spellCheck={true}
         />
         <span className="field-hint">Facultatif. Visible sur l'écran résultat.</span>
       </label>

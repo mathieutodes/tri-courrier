@@ -36,6 +36,17 @@ export function ensureRuesLoaded(): void {
   void refreshRues();
 }
 
+/**
+ * `true` dès que le premier chargement depuis IndexedDB s'est terminé (au
+ * moins une fois). Sert à distinguer « pas encore chargé » de « chargé mais
+ * vide » — voir `DatabasePage` : on n'ouvre jamais un formulaire de
+ * modification tant que ce store n'est pas prêt, pour ne jamais lui passer
+ * une liste de rues temporairement vide.
+ */
+export function areRuesLoaded(): boolean {
+  return loaded;
+}
+
 export function subscribeRues(listener: () => void): () => void {
   listeners.add(listener);
   return () => {

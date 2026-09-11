@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { Person } from '../types/person';
 import type { Rue } from '../types/rue';
 
@@ -13,10 +13,17 @@ import type { Rue } from '../types/rue';
  */
 
 let mockPersons: Person[] = [];
-const mockRues: Rue[] = [];
+let mockRues: Rue[] = [];
+// Contrôlé par certains tests pour simuler un chargement des rues RETARDÉ
+// (store pas encore prêt au moment où `editPersonId` est déjà exploitable) —
+// voir describe « chargement des rues retardé » plus bas.
+let mockRuesLoaded = true;
 // `vi.hoisted` : seul moyen fiable de créer un mock utilisable depuis une
 // factory `vi.mock` (elles-mêmes hoistées au tout début du fichier).
-const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+const { mockNavigate, mockUpdatePersonSynced } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  mockUpdatePersonSynced: vi.fn(async (_person: Person) => {}),
+}));
 
 vi.mock('../App', () => ({
   navigate: mockNavigate,
@@ -28,7 +35,7 @@ vi.mock('../db/personStore', () => ({
   ensurePersonsLoaded: vi.fn(),
   refreshPersons: vi.fn(async () => {}),
   addPersonSynced: vi.fn(async () => {}),
-  updatePersonSynced: vi.fn(async () => {}),
+  updatePersonSynced: mockUpdatePersonSynced,
   deletePersonSynced: vi.fn(async () => {}),
   bulkAddPersonsSynced: vi.fn(async () => 0),
   deleteAllPersonsSynced: vi.fn(async () => {}),
@@ -36,6 +43,7 @@ vi.mock('../db/personStore', () => ({
 
 vi.mock('../db/rueStore', () => ({
   useRues: () => mockRues,
+  areRuesLoaded: () => mockRuesLoaded,
   ensureRuesLoaded: vi.fn(),
   refreshRues: vi.fn(async () => {}),
   addRueSynced: vi.fn(async () => {}),
@@ -73,6 +81,9 @@ function person(id: string, nom: string, overrides: Partial<Person> = {}): Perso
 afterEach(() => {
   cleanup();
   mockNavigate.mockClear();
+  mockUpdatePersonSynced.mockClear();
+  mockRues = [];
+  mockRuesLoaded = true;
 });
 
 describe('DatabasePage — ouverture directe via editPersonId (APPORTER UNE PRÉCISION)', () => {
@@ -107,5 +118,96 @@ describe('DatabasePage — ouverture directe via editPersonId (APPORTER UNE PRÉ
 
     expect(screen.queryByText('Modifier une personne')).toBeNull();
     expect(screen.getByText('Base de données')).not.toBeNull();
+  });
+});
+
+describe('BUG 1 — régression : APPORTER UNE PRÉCISION ne doit jamais altérer la rue existante', () => {
+  const rue: Rue = { id: 'r1', nom: 'Rue Claude Kogan' };
+
+  function existingPerson(): Person {
+    return person('p1', 'DUPONT', {
+      prenom: 'Jean',
+      adresse: '35 Rue Claude Kogan',
+      numeroRue: 35,
+      rueId: 'r1',
+      colonne: 4,
+      panneau: 2,
+      logement: null,
+      remarque: null,
+    });
+  }
+
+  it('1-5. la rue existante reste sélectionnée, numeroRue/rueId/adresse inchangés — modifier uniquement Remarque ne touche aucun autre champ', async () => {
+    mockPersons = [existingPerson()];
+    mockRues = [rue];
+    mockRuesLoaded = true;
+    render(<DatabasePage editPersonId="p1" />);
+
+    // La bonne personne, avec sa rue déjà résolue dans le select (jamais vide).
+    expect(screen.getByText('Modifier une personne')).not.toBeNull();
+    const rueSelect = screen.getByLabelText(/^rue/i) as HTMLSelectElement;
+    expect(rueSelect.value).toBe('r1');
+    expect((screen.getByLabelText(/numéro \*/i) as HTMLInputElement).value).toBe('35');
+    expect((screen.getByLabelText(/colonne \*/i) as HTMLInputElement).value).toBe('4');
+    expect((screen.getByLabelText(/panneau/i) as HTMLInputElement).value).toBe('2');
+
+    // On ne touche QUE la remarque.
+    fireEvent.change(screen.getByLabelText(/remarque/i), {
+      target: { value: 'Boîte derrière la porte' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(mockUpdatePersonSynced).toHaveBeenCalledTimes(1);
+    const saved = mockUpdatePersonSynced.mock.calls[0][0] as Person;
+    expect(saved.id).toBe('p1');
+    expect(saved.adresse).toBe('35 Rue Claude Kogan');
+    expect(saved.numeroRue).toBe(35);
+    expect(saved.rueId).toBe('r1');
+    expect(saved.panneau).toBe(2);
+    expect(saved.colonne).toBe(4);
+    expect(saved.remarque).toBe('Boîte derrière la porte');
+  });
+});
+
+describe('BUG 1 — chargement des rues retardé', () => {
+  const rue: Rue = { id: 'r1', nom: 'Rue Claude Kogan' };
+
+  function existingPerson(): Person {
+    return person('p1', 'DUPONT', {
+      adresse: '35 Rue Claude Kogan',
+      numeroRue: 35,
+      rueId: 'r1',
+      colonne: 4,
+      panneau: 2,
+    });
+  }
+
+  it("n'ouvre pas la fiche tant que le store des rues n'a pas fini de charger (persons prêt, rues pas encore)", () => {
+    mockPersons = [existingPerson()];
+    mockRues = []; // store des rues encore vide
+    mockRuesLoaded = false; // ... et pas encore chargé (pas juste "chargé et vide")
+    render(<DatabasePage editPersonId="p1" />);
+
+    // On reste sur la liste : jamais de PersonForm monté avec une liste de
+    // rues incomplète.
+    expect(screen.queryByText('Modifier une personne')).toBeNull();
+  });
+
+  it('ouvre la fiche avec la rue correctement sélectionnée dès que le chargement des rues se termine', () => {
+    mockPersons = [existingPerson()];
+    mockRues = [];
+    mockRuesLoaded = false;
+    const { rerender } = render(<DatabasePage editPersonId="p1" />);
+    expect(screen.queryByText('Modifier une personne')).toBeNull();
+
+    // Le chargement des rues se termine (même principe que `refreshRues()`
+    // qui met à jour le cache puis notifie les abonnés -> nouveau rendu).
+    mockRues = [rue];
+    mockRuesLoaded = true;
+    rerender(<DatabasePage editPersonId="p1" />);
+
+    expect(screen.getByText('Modifier une personne')).not.toBeNull();
+    const rueSelect = screen.getByLabelText(/^rue/i) as HTMLSelectElement;
+    expect(rueSelect.value).toBe('r1');
   });
 });
