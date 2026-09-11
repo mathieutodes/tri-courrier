@@ -12,6 +12,7 @@ export interface RawPersonFields {
   colonne: string;
   panneau: string;
   logement: string;
+  reexpedition: string;
 }
 
 export type ValidationErrors = Partial<Record<keyof RawPersonFields, string>>;
@@ -38,6 +39,8 @@ export interface RawPersonForm {
   colonne: string;
   panneau: string;
   logement: string;
+  /** Case à cocher « Réexpédition » : valeur booléenne directe (pas de parsing texte). */
+  reexpedition: boolean;
 }
 
 export type PersonFormErrors = Partial<Record<keyof RawPersonForm, string>>;
@@ -91,6 +94,19 @@ export function parseNumero(raw: string): number | null {
 export function parseLogement(raw: string): string | null {
   const trimmed = cleanStored(raw ?? '');
   return trimmed === '' ? null : trimmed;
+}
+
+/** Valeurs CSV reconnues comme "vrai" pour `reexpedition` (casse/espaces ignorés). */
+const REEXPEDITION_TRUE_VALUES = new Set(['oui', 'true', '1']);
+
+/**
+ * Colonne CSV `reexpedition` : cellule vide, colonne absente, ou toute autre
+ * valeur non reconnue -> `false`. Jamais bloquant (aucune erreur possible),
+ * pour garantir la compatibilité avec les anciens CSV sans cette colonne.
+ */
+export function parseReexpedition(raw: string | undefined): boolean {
+  const normalized = (raw ?? '').trim().toLowerCase();
+  return REEXPEDITION_TRUE_VALUES.has(normalized);
 }
 
 /**
@@ -159,6 +175,7 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
 
   const prenomClean = cleanStored(fields.prenom);
   const prenom = prenomClean === '' ? null : prenomClean;
+  const reexpedition = parseReexpedition(fields.reexpedition);
 
   const valid = Object.keys(errors).length === 0;
   if (!valid) return { valid, errors };
@@ -175,6 +192,7 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
       colonne,
       panneau: panneau.value,
       logement,
+      reexpedition,
     },
   };
 }
@@ -242,6 +260,7 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
       colonne,
       panneau: panneau.value,
       logement,
+      reexpedition: fields.reexpedition,
     },
   };
 }

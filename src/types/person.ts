@@ -25,6 +25,15 @@ export interface Person {
    * toutes les fiches localisées par colonne (le cas très largement majoritaire).
    */
   logement: string | null;
+  /**
+   * Destinataire ayant un ordre de réexpédition actif. `false` pour toutes
+   * les fiches créées avant l'ajout de ce champ (voir `fromStored` dans
+   * `src/db/database.ts` : lu défensivement avec `?? false`, jamais absent
+   * côté application). N'intervient jamais dans la recherche/preshot —
+   * uniquement affiché comme avertissement sur l'écran résultat, après
+   * sélection du destinataire.
+   */
+  reexpedition: boolean;
 }
 
 /** Données d'un formulaire avant validation / création de l'id. */
@@ -37,6 +46,7 @@ export interface PersonInput {
   colonne: number | null;
   panneau: number | null;
   logement: string | null;
+  reexpedition: boolean;
 }
 
 export const MIN_COLONNE = 1;

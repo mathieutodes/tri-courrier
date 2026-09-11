@@ -41,6 +41,10 @@ function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
     colonne: person?.colonne != null ? String(person.colonne) : '',
     panneau: person && person.panneau !== null ? String(person.panneau) : '',
     logement: person?.logement ?? '',
+    // Nouvelle fiche : décochée par défaut. Modification : reflète la valeur
+    // actuelle (les anciennes fiches sans ce champ valent `false`, voir
+    // `fromStored` dans src/db/database.ts).
+    reexpedition: person?.reexpedition ?? false,
   };
 }
 
@@ -52,12 +56,19 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
   const legacyAdresse =
     initial && (fields.numero === '' || fields.rueId === '') ? initial.adresse : null;
 
-  function set<K extends Exclude<keyof RawPersonForm, 'mode'>>(key: K, value: string) {
+  function set<K extends Exclude<keyof RawPersonForm, 'mode' | 'reexpedition'>>(
+    key: K,
+    value: string,
+  ) {
     setFields((f) => ({ ...f, [key]: value }));
   }
 
   function setMode(mode: RawPersonForm['mode']) {
     setFields((f) => ({ ...f, mode }));
+  }
+
+  function setReexpedition(value: boolean) {
+    setFields((f) => ({ ...f, reexpedition: value }));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -219,6 +230,15 @@ export default function PersonForm({ initial, rues, onSubmit, onCancel }: Props)
           </label>
         </>
       )}
+
+      <label className="checkbox-row checkbox-row-neutral">
+        <input
+          type="checkbox"
+          checked={fields.reexpedition}
+          onChange={(e) => setReexpedition(e.target.checked)}
+        />
+        <span>Réexpédition</span>
+      </label>
 
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

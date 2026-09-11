@@ -70,6 +70,7 @@ function person(id: string, nom: string): Person {
     colonne: 1,
     panneau: null,
     logement: null,
+    reexpedition: false,
   };
 }
 
@@ -163,5 +164,15 @@ describe('DatabasePage — Zone dangereuse : suppression de tous les destinatair
     fireEvent.click(getConfirmButton());
 
     await waitFor(() => expect(mockDeleteAllPersonsSynced).toHaveBeenCalledTimes(1));
+  });
+
+  it('affiche le badge RÉEXPÉDITION uniquement pour les destinataires concernés', () => {
+    mockPersons = [
+      { ...person('p1', 'DUPONT'), reexpedition: true },
+      { ...person('p2', 'MARTIN'), reexpedition: false },
+    ];
+    render(<DatabasePage />);
+
+    expect(screen.getAllByText('RÉEXPÉDITION')).toHaveLength(1);
   });
 });

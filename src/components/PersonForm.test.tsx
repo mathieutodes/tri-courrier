@@ -18,6 +18,7 @@ function existingPerson(overrides: Partial<Person>): Person {
     colonne: null,
     panneau: 4,
     logement: '314',
+    reexpedition: false,
     ...overrides,
   };
 }
@@ -115,5 +116,56 @@ describe('PersonForm', () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByText(/panneau est obligatoire/i)).not.toBeNull();
+  });
+
+  it('nouvelle fiche : la case Réexpédition est décochée par défaut', () => {
+    render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
+    expect((screen.getByLabelText(/réexpédition/i) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('édition : la case Réexpédition reflète la valeur actuelle de la fiche', () => {
+    render(
+      <PersonForm
+        initial={existingPerson({ reexpedition: true })}
+        rues={rues}
+        onSubmit={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect((screen.getByLabelText(/réexpédition/i) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('cocher puis enregistrer transmet reexpedition = true', () => {
+    const onSubmit = vi.fn();
+    render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/^nom/i), { target: { value: 'DUPONT' } });
+    fireEvent.change(screen.getByLabelText(/numéro \*/i), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText(/^rue/i), { target: { value: 'r1' } });
+    fireEvent.change(screen.getByLabelText(/colonne \*/i), { target: { value: '5' } });
+    fireEvent.click(screen.getByLabelText(/réexpédition/i));
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].reexpedition).toBe(true);
+  });
+
+  it('modification : décocher une fiche en réexpédition repasse reexpedition = false', () => {
+    const onSubmit = vi.fn();
+    render(
+      <PersonForm
+        initial={existingPerson({ colonne: 5, panneau: null, logement: null, reexpedition: true })}
+        rues={rues}
+        onSubmit={onSubmit}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect((screen.getByLabelText(/réexpédition/i) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText(/réexpédition/i));
+    fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].reexpedition).toBe(false);
   });
 });

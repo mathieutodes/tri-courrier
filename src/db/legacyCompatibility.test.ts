@@ -63,8 +63,47 @@ describe('Compatibilité ascendante — fiches enregistrées avant le champ loge
         colonne: 4,
         panneau: 3,
         logement: null,
+        reexpedition: false,
       },
     ]);
+  });
+
+  it('une fiche ancienne sans champ reexpedition est lue avec reexpedition = false', async () => {
+    stores().persons.set('legacy-reexp', {
+      id: 'legacy-reexp',
+      nom: 'SANSCHAMP',
+      prenom: null,
+      adresse: '1 Rue Ancienne',
+      colonne: 2,
+      panneau: null,
+      nomNormalise: 'sanschamp',
+      // Pas de champ `reexpedition` du tout dans l'objet stocké — simule une
+      // fiche enregistrée avant l'ajout de ce champ.
+    });
+
+    const [person] = await getAllPersons();
+    expect(person.reexpedition).toBe(false);
+  });
+
+  it('sauvegarde avec reexpedition = true, puis modification true -> false', async () => {
+    stores().persons.set('legacy-3', {
+      id: 'legacy-3',
+      nom: 'TROISIEME',
+      prenom: null,
+      adresse: '7 Rue Y',
+      colonne: 1,
+      panneau: null,
+      nomNormalise: 'troisieme',
+    });
+
+    const [before] = await getAllPersons();
+    await updatePerson({ ...before, reexpedition: true });
+    const [afterTrue] = await getAllPersons();
+    expect(afterTrue.reexpedition).toBe(true);
+
+    await updatePerson({ ...afterTrue, reexpedition: false });
+    const [afterFalse] = await getAllPersons();
+    expect(afterFalse.reexpedition).toBe(false);
   });
 
   it('une fiche ancienne reste modifiable (ex. bascule vers panneau + logement) sans rien perdre d’autre', async () => {

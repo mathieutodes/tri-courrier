@@ -15,6 +15,7 @@ function person(overrides: Partial<Person>): Person {
     colonne: null,
     panneau: null,
     logement: null,
+    reexpedition: false,
     ...overrides,
   };
 }
@@ -79,5 +80,29 @@ describe('SearchResultView', () => {
     render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
     expect(screen.getByText('DUPONT Jean')).not.toBeNull();
     expect(screen.getByRole('button', { name: /nouvelle recherche/i })).not.toBeNull();
+  });
+
+  it('reexpedition === true : affiche le bandeau d’avertissement', () => {
+    render(
+      <SearchResultView
+        person={person({ colonne: 5, reexpedition: true })}
+        onNewSearch={() => {}}
+      />,
+    );
+    expect(screen.getByText('RÉEXPÉDITION')).not.toBeNull();
+    expect(screen.getByText('Vérifiez vos ordres de réexpédition actifs')).not.toBeNull();
+    // Le résultat panneau/colonne/logement reste parfaitement visible.
+    expect(screen.getByText('COLONNE')).not.toBeNull();
+    expect(screen.getByText('5')).not.toBeNull();
+  });
+
+  it('reexpedition === false : aucun bandeau affiché', () => {
+    render(
+      <SearchResultView
+        person={person({ colonne: 5, reexpedition: false })}
+        onNewSearch={() => {}}
+      />,
+    );
+    expect(screen.queryByText('RÉEXPÉDITION')).toBeNull();
   });
 });

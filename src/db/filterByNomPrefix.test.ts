@@ -12,6 +12,7 @@ const mk = (id: string, nom: string, prenom: string | null, colonne: number): Pe
   colonne,
   panneau: null,
   logement: null,
+  reexpedition: false,
 });
 
 const persons: Person[] = [

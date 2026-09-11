@@ -34,3 +34,20 @@ export function BackIcon({ size = 22 }: IconProps) {
     </svg>
   );
 }
+
+/** Triangle d'avertissement + point d'exclamation — bandeau RÉEXPÉDITION. */
+export function WarningIcon({ size = 22 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5 L21.5 20 H2.5 Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <line x1="12" y1="9.5" x2="12" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1.15" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

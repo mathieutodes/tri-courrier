@@ -420,6 +420,9 @@ export default function DatabasePage() {
                     {p.colonne === null && p.logement !== null && p.logement !== '' && (
                       <span className="logement-badge">Logement {p.logement}</span>
                     )}
+                    {p.reexpedition && (
+                      <span className="reexpedition-badge">RÉEXPÉDITION</span>
+                    )}
                   </span>
                 </div>
                 <div className="row-actions">

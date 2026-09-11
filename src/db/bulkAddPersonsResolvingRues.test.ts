@@ -78,6 +78,7 @@ function csvInput(nom: string, adresse: string, colonne = 1): PersonInput {
     colonne,
     panneau: null,
     logement: null,
+    reexpedition: false,
   };
 }
 
@@ -208,6 +209,7 @@ describe('bulkAddPersonsResolvingRues', () => {
         colonne: null,
         panneau: 4,
         logement: '314',
+        reexpedition: false,
       },
       {
         nom: 'PETIT',
@@ -218,6 +220,7 @@ describe('bulkAddPersonsResolvingRues', () => {
         colonne: null,
         panneau: 4,
         logement: '315',
+        reexpedition: false,
       },
     ];
 

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Person } from '../types/person';
 import { getColumnAccent } from '../utils/columnColors';
+import { WarningIcon } from './icons';
 
 interface Props {
   person: Person;
@@ -42,6 +43,18 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
   return (
     <div className="result">
       <div className="result-name">{fullName(person)}</div>
+
+      {person.reexpedition && (
+        <div className="reexpedition-banner" role="status">
+          <WarningIcon size={20} />
+          <div className="reexpedition-banner-text">
+            <span className="reexpedition-banner-title">RÉEXPÉDITION</span>
+            <span className="reexpedition-banner-subtitle">
+              Vérifiez vos ordres de réexpédition actifs
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className={`result-card${solo ? ' result-card-solo' : ''}`} style={cardStyle}>
         {showPanneauFigure && (

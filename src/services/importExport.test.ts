@@ -7,7 +7,7 @@ vi.mock('../db/database', () => ({
   getAllPersons: vi.fn(async () => mockExistingPersons),
 }));
 
-import { CSV_HEADER, buildImportPreview, personsToCSV } from './importExport';
+import { CSV_HEADER, buildImportPreview, personsToCSV, personsToJSON } from './importExport';
 
 function csvFile(content: string): File {
   return new File([content], 'import.csv', { type: 'text/csv' });
@@ -79,8 +79,95 @@ describe('buildImportPreview — nouveau format avec logement', () => {
   });
 });
 
+describe('buildImportPreview — colonne reexpedition', () => {
+  it('ancien CSV sans colonne "reexpedition" -> false', async () => {
+    const csv = 'nom,prenom,adresse,colonne,panneau\nDUPONT,Jean,12 Rue Victor Hugo,5,1\n';
+    const preview = await buildImportPreview(csvFile(csv));
+
+    expect(preview.validCount).toBe(1);
+    expect(preview.toImport[0].reexpedition).toBe(false);
+  });
+
+  it('cellule vide -> false', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,reexpedition\nDUPONT,Jean,12 Rue Victor Hugo,5,1,\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].reexpedition).toBe(false);
+  });
+
+  it('"oui" -> true', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,reexpedition\nDUPONT,Jean,12 Rue Victor Hugo,5,1,oui\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].reexpedition).toBe(true);
+  });
+
+  it('"true" -> true', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,reexpedition\nDUPONT,Jean,12 Rue Victor Hugo,5,1,true\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].reexpedition).toBe(true);
+  });
+
+  it('"1" -> true', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,reexpedition\nDUPONT,Jean,12 Rue Victor Hugo,5,1,1\n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].reexpedition).toBe(true);
+  });
+
+  it('insensible à la casse et aux espaces ("  OUI  ")', async () => {
+    const csv =
+      'nom,prenom,adresse,colonne,panneau,reexpedition\nDUPONT,Jean,12 Rue Victor Hugo,5,1,  OUI  \n';
+    const preview = await buildImportPreview(csvFile(csv));
+    expect(preview.toImport[0].reexpedition).toBe(true);
+  });
+});
+
 describe('personsToCSV — export', () => {
-  it('8. nouvel en-tête nom,prenom,adresse,panneau,colonne,logement, colonne logement incluse', () => {
+  const persons: Person[] = [
+    {
+      id: '1',
+      nom: 'DUPONT',
+      prenom: 'Jean',
+      adresse: '12 Rue Victor Hugo',
+      numeroRue: 12,
+      rueId: 'r1',
+      colonne: 5,
+      panneau: 1,
+      logement: null,
+      reexpedition: true,
+    },
+    {
+      id: '2',
+      nom: 'LEROY',
+      prenom: null,
+      adresse: '3 Rue des Tilleuls',
+      numeroRue: 3,
+      rueId: 'r2',
+      colonne: null,
+      panneau: 4,
+      logement: '314',
+      reexpedition: false,
+    },
+  ];
+
+  it('8. nouvel en-tête nom,prenom,adresse,panneau,colonne,logement,reexpedition', () => {
+    expect(CSV_HEADER).toBe('nom,prenom,adresse,panneau,colonne,logement,reexpedition');
+
+    const lines = personsToCSV(persons).trim().split('\r\n');
+    expect(lines[0]).toBe(CSV_HEADER);
+  });
+
+  it('reexpedition = true -> "oui" ; reexpedition = false -> cellule vide', () => {
+    const lines = personsToCSV(persons).trim().split('\r\n');
+    expect(lines[1]).toBe('DUPONT,Jean,12 Rue Victor Hugo,1,5,,oui');
+    expect(lines[2]).toBe('LEROY,,3 Rue des Tilleuls,4,,314,');
+  });
+});
+
+describe('personsToJSON — export', () => {
+  it('conserve reexpedition dans l’export JSON', () => {
     const persons: Person[] = [
       {
         id: '1',
@@ -92,25 +179,10 @@ describe('personsToCSV — export', () => {
         colonne: 5,
         panneau: 1,
         logement: null,
-      },
-      {
-        id: '2',
-        nom: 'LEROY',
-        prenom: null,
-        adresse: '3 Rue des Tilleuls',
-        numeroRue: 3,
-        rueId: 'r2',
-        colonne: null,
-        panneau: 4,
-        logement: '314',
+        reexpedition: true,
       },
     ];
-
-    expect(CSV_HEADER).toBe('nom,prenom,adresse,panneau,colonne,logement');
-
-    const lines = personsToCSV(persons).trim().split('\r\n');
-    expect(lines[0]).toBe(CSV_HEADER);
-    expect(lines[1]).toBe('DUPONT,Jean,12 Rue Victor Hugo,1,5,');
-    expect(lines[2]).toBe('LEROY,,3 Rue des Tilleuls,4,,314');
+    const parsed = JSON.parse(personsToJSON(persons));
+    expect(parsed[0].reexpedition).toBe(true);
   });
 });

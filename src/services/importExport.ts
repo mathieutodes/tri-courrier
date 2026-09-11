@@ -8,12 +8,12 @@ import { parseColonne, parsePanneau, validatePerson } from '../utils/validation'
  * Nouveau format exporté. L'import reste compatible avec l'ancien ordre
  * (`nom,prenom,adresse,colonne,panneau`) et tout ordre de colonnes : le CSV
  * est lu par NOM d'en-tête (Papa.parse `header: true`), jamais par position.
- * Un ancien fichier sans colonne `logement` importe donc exactement comme
- * avant, avec `logement = null`.
+ * Un ancien fichier sans colonne `logement` (ou `reexpedition`) importe donc
+ * exactement comme avant, avec `logement = null` / `reexpedition = false`.
  */
-export const CSV_HEADER = 'nom,prenom,adresse,panneau,colonne,logement';
+export const CSV_HEADER = 'nom,prenom,adresse,panneau,colonne,logement,reexpedition';
 
-const FIELDS = ['nom', 'prenom', 'adresse', 'colonne', 'panneau', 'logement'] as const;
+const FIELDS = ['nom', 'prenom', 'adresse', 'colonne', 'panneau', 'logement', 'reexpedition'] as const;
 type CsvField = (typeof FIELDS)[number];
 
 export type ImportStatus = 'valid' | 'invalid' | 'duplicate';
@@ -29,6 +29,7 @@ export interface ImportRow {
     colonne: string;
     panneau: string;
     logement: string;
+    reexpedition: string;
   };
   value?: PersonInput;
 }
@@ -74,6 +75,10 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       colonne: get('colonne'),
       panneau: get('panneau'),
       logement: get('logement'),
+      // Colonne absente d'un ancien CSV : `record['reexpedition']` vaut alors
+      // `undefined`, et `get()` le convertit en chaîne vide -> `false` via
+      // `parseReexpedition` (voir validatePerson ci-dessous).
+      reexpedition: get('reexpedition'),
     };
 
     const result = validatePerson({
@@ -83,6 +88,7 @@ export async function buildImportPreview(file: File): Promise<ImportPreview> {
       colonne: display.colonne,
       panneau: display.panneau,
       logement: display.logement,
+      reexpedition: display.reexpedition,
     });
 
     const line = index + 2; // +1 en-tête, +1 pour un index humain
@@ -143,6 +149,7 @@ export function personsToCSV(persons: Person[]): string {
         p.panneau === null ? '' : String(p.panneau),
         p.colonne === null ? '' : String(p.colonne),
         csvCell(p.logement ?? ''),
+        p.reexpedition ? 'oui' : '',
       ].join(','),
     );
   }
@@ -158,6 +165,7 @@ export function personsToJSON(persons: Person[]): string {
     colonne: p.colonne,
     panneau: p.panneau,
     logement: p.logement,
+    reexpedition: p.reexpedition,
   }));
   return JSON.stringify(clean, null, 2);
 }

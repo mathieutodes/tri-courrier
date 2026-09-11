@@ -4,6 +4,7 @@ import {
   parseLogement,
   parseNumero,
   parsePanneau,
+  parseReexpedition,
   validatePerson,
   validatePersonForm,
 } from './validation';
@@ -91,6 +92,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
     colonne: '5',
     panneau: '1',
     logement: '',
+    reexpedition: '',
   };
 
   it('1. colonne uniquement : valide (numeroRue / rueId / logement null)', () => {
@@ -105,6 +107,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
       colonne: 5,
       panneau: null,
       logement: null,
+      reexpedition: false,
     });
   });
 
@@ -128,6 +131,7 @@ describe('validatePerson (CSV — adresse libre)', () => {
       colonne: null,
       panneau: 2,
       logement: '314',
+      reexpedition: false,
     });
   });
 
@@ -182,6 +186,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
     colonne: '5',
     panneau: '1',
     logement: '',
+    reexpedition: false,
   };
 
   it('mode colonne : construit l’adresse et renseigne numeroRue / rueId, logement null', () => {
@@ -196,6 +201,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
       colonne: 5,
       panneau: 1,
       logement: null,
+      reexpedition: false,
     });
   });
 
@@ -231,6 +237,7 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
       colonne: null,
       panneau: 2,
       logement: '314',
+      reexpedition: false,
     });
   });
 
@@ -269,5 +276,40 @@ describe('validatePersonForm (numéro + rue + mode colonne/logement)', () => {
     );
     expect(r.valid).toBe(true);
     expect(r.value?.logement).toBe('A 12');
+  });
+
+  it('mode colonne : la case Réexpédition cochée passe reexpedition = true', () => {
+    const r = validatePersonForm({ ...base, reexpedition: true }, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value?.reexpedition).toBe(true);
+  });
+
+  it('modification true -> false : la case décochée repasse reexpedition = false', () => {
+    const r = validatePersonForm({ ...base, reexpedition: false }, rues);
+    expect(r.valid).toBe(true);
+    expect(r.value?.reexpedition).toBe(false);
+  });
+});
+
+describe('parseReexpedition', () => {
+  it('reconnaît "oui", "true", "1" (insensible à la casse et aux espaces)', () => {
+    expect(parseReexpedition('oui')).toBe(true);
+    expect(parseReexpedition('OUI')).toBe(true);
+    expect(parseReexpedition('  oui  ')).toBe(true);
+    expect(parseReexpedition('true')).toBe(true);
+    expect(parseReexpedition('TRUE')).toBe(true);
+    expect(parseReexpedition('1')).toBe(true);
+  });
+
+  it('cellule vide ou colonne absente -> false', () => {
+    expect(parseReexpedition('')).toBe(false);
+    expect(parseReexpedition(undefined)).toBe(false);
+    expect(parseReexpedition('   ')).toBe(false);
+  });
+
+  it('toute autre valeur -> false (jamais bloquant)', () => {
+    expect(parseReexpedition('non')).toBe(false);
+    expect(parseReexpedition('0')).toBe(false);
+    expect(parseReexpedition('n’importe quoi')).toBe(false);
   });
 });
