@@ -4,6 +4,7 @@ import type { Rue } from '../types/rue';
 import { decomposeAdresse } from '../utils/adresse';
 import {
   validatePersonForm,
+  type LegacyAddress,
   type PersonFormErrors,
   type RawPersonForm,
 } from '../utils/validation';
@@ -112,10 +113,20 @@ export default function PersonForm({
   const legacyAdresse =
     initial && (fields.numero === '' || fields.rueId === '') ? initial.adresse : null;
 
+  // Protection contre la perte silencieuse de données : tant que
+  // l'utilisateur n'a pas lui-même touché Numéro ou Rue, on garde la
+  // possibilité de préserver l'adresse d'origine si la rue reste non résolue
+  // à l'enregistrement (voir `handleSubmit`). Dès qu'il modifie l'un de ces
+  // deux champs, ce filet se désactive DÉFINITIVEMENT pour cette session de
+  // formulaire : il est alors en train d'éditer l'adresse lui-même, la
+  // validation normale (rue obligatoire) doit s'appliquer pleinement.
+  const addressTouched = useRef(false);
+
   function set<K extends Exclude<keyof RawPersonForm, 'mode' | 'reexpedition'>>(
     key: K,
     value: string,
   ) {
+    if (key === 'numero' || key === 'rueId') addressTouched.current = true;
     setFields((f) => ({ ...f, [key]: value }));
   }
 
@@ -129,7 +140,11 @@ export default function PersonForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = validatePersonForm(fields, rues);
+    const legacyAddress: LegacyAddress | null =
+      initial && !addressTouched.current
+        ? { adresse: initial.adresse, numeroRue: initial.numeroRue, rueId: initial.rueId }
+        : null;
+    const result = validatePersonForm(fields, rues, legacyAddress);
     if (!result.valid || !result.value) {
       setErrors(result.errors);
       return;

@@ -29,6 +29,34 @@ describe('decomposeAdresse', () => {
     expect(decomposeAdresse('12bis Rue Victor Hugo', rues)).toBeNull();
     expect(decomposeAdresse('', rues)).toBeNull();
   });
+
+  it('reconnaît une rue même avec une apostrophe tapée différemment (droite vs typographique)', () => {
+    const ruesAvecApostrophe: Rue[] = [{ id: 'r3', nom: "Galerie de l'Arlequin" }];
+    // Rue enregistrée avec apostrophe droite, adresse saisie avec apostrophe
+    // typographique (ex. auto-substituée par le clavier iOS/Safari) — et vice-versa.
+    expect(decomposeAdresse('140 Galerie de l’Arlequin', ruesAvecApostrophe)).toEqual({
+      numeroRue: 140,
+      rueId: 'r3',
+    });
+
+    const ruesTypographique: Rue[] = [{ id: 'r4', nom: 'Galerie de l’Arlequin' }];
+    expect(decomposeAdresse("140 Galerie de l'Arlequin", ruesTypographique)).toEqual({
+      numeroRue: 140,
+      rueId: 'r4',
+    });
+  });
+
+  it('ne rapproche jamais deux rues réellement différentes', () => {
+    const deuxRues: Rue[] = [
+      { id: 'r5', nom: "Rue de l'Église" },
+      { id: 'r6', nom: 'Rue de la Poste' },
+    ];
+    expect(decomposeAdresse('9 Rue de la Poste', deuxRues)).toEqual({
+      numeroRue: 9,
+      rueId: 'r6',
+    });
+    expect(decomposeAdresse('9 Rue Inexistante', deuxRues)).toBeNull();
+  });
 });
 
 describe('splitAdresse', () => {

@@ -411,6 +411,144 @@ describe('PersonForm', () => {
     });
   });
 
+  describe('BUG 1 (suite) — résolution de rue selon la forme des données, et protection de l’adresse', () => {
+    function legacyPerson(overrides: Partial<Person> = {}): Person {
+      return {
+        id: 'p2',
+        nom: 'MARTIN',
+        prenom: null,
+        adresse: '35 Rue Claude Kogan',
+        // Très ancienne fiche : numeroRue/rueId jamais renseignés (créée
+        // avant l'introduction de ces champs) — seule `adresse` existe.
+        numeroRue: null,
+        rueId: null,
+        colonne: 4,
+        panneau: 2,
+        logement: null,
+        reexpedition: false,
+        remarque: null,
+        ...overrides,
+      };
+    }
+
+    it('1. fiche moderne avec rueId valide : sélectionnée directement, aucune déduction nécessaire', () => {
+      const modernRues: Rue[] = [{ id: 'r9', nom: 'Rue Claude Kogan' }];
+      render(
+        <PersonForm
+          initial={legacyPerson({ numeroRue: 35, rueId: 'r9' })}
+          rues={modernRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r9');
+      expect((screen.getByLabelText(/numéro \*/i) as HTMLInputElement).value).toBe('35');
+    });
+
+    it('2. ancienne fiche sans rueId mais adresse décomposable : numéro + rue déduits automatiquement', () => {
+      const legacyRues: Rue[] = [{ id: 'r9', nom: 'Rue Claude Kogan' }];
+      render(
+        <PersonForm
+          initial={legacyPerson()}
+          rues={legacyRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r9');
+      expect((screen.getByLabelText(/numéro \*/i) as HTMLInputElement).value).toBe('35');
+    });
+
+    it('3. rue avec apostrophe : déduite même si l’apostrophe saisie diffère (droite/typographique)', () => {
+      const arlequinRues: Rue[] = [{ id: 'r10', nom: "Galerie de l'Arlequin" }];
+      render(
+        <PersonForm
+          // Adresse d'origine tapée avec l'apostrophe typographique (ex. clavier iOS).
+          initial={legacyPerson({ adresse: '140 Galerie de l’Arlequin' })}
+          rues={arlequinRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r10');
+      expect((screen.getByLabelText(/numéro \*/i) as HTMLInputElement).value).toBe('140');
+    });
+
+    it('4. rue avec accents : déduite malgré une casse/accentuation différente', () => {
+      const constantineRues: Rue[] = [{ id: 'r11', nom: 'Avenue de Constantine' }];
+      render(
+        <PersonForm
+          initial={legacyPerson({ adresse: '80 AVENUE DE CÔNSTANTINE' })}
+          rues={constantineRues}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('r11');
+    });
+
+    it('5. adresse valide mais impossible à résoudre (rue absente du catalogue) : select laissé vide, formulaire pas bloqué à l’ouverture', () => {
+      render(
+        <PersonForm
+          initial={legacyPerson({ adresse: '35 Rue Introuvable' })}
+          rues={[{ id: 'r12', nom: 'Rue Sans Rapport' }]}
+          onSubmit={() => {}}
+          onCancel={() => {}}
+        />,
+      );
+      expect((screen.getByLabelText(/^rue/i) as HTMLSelectElement).value).toBe('');
+      // L'adresse d'origine reste visible pour information.
+      expect(screen.getByText(/adresse actuelle.*35 rue introuvable/i)).not.toBeNull();
+    });
+
+    it('6. rue impossible à résoudre : modifier UNIQUEMENT la remarque préserve l’adresse d’origine à l’identique (aucune perte silencieuse)', () => {
+      const onSubmit = vi.fn();
+      render(
+        <PersonForm
+          initial={legacyPerson({ adresse: '35 Rue Introuvable' })}
+          rues={[{ id: 'r12', nom: 'Rue Sans Rapport' }]}
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      // On ne touche NI numéro NI rue : uniquement la remarque.
+      fireEvent.change(screen.getByLabelText(/remarque/i), {
+        target: { value: 'Boîte au fond de la cour' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      // Jamais bloqué, jamais d'erreur "rue obligatoire" dans ce cas précis.
+      expect(screen.queryByText(/rue est obligatoire/i)).toBeNull();
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      const value = onSubmit.mock.calls[0][0];
+      expect(value.adresse).toBe('35 Rue Introuvable');
+      expect(value.numeroRue).toBeNull();
+      expect(value.rueId).toBeNull();
+      expect(value.panneau).toBe(2);
+      expect(value.colonne).toBe(4);
+      expect(value.remarque).toBe('Boîte au fond de la cour');
+    });
+
+    it('si la rue reste non résolue et que l’utilisateur touche lui-même le numéro, la protection se désactive (validation normale)', () => {
+      const onSubmit = vi.fn();
+      render(
+        <PersonForm
+          initial={legacyPerson({ adresse: '35 Rue Introuvable' })}
+          rues={[{ id: 'r12', nom: 'Rue Sans Rapport' }]}
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText(/numéro \*/i), { target: { value: '35' } });
+      fireEvent.click(screen.getByRole('button', { name: 'ENREGISTRER' }));
+
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getByText(/rue est obligatoire/i)).not.toBeNull();
+    });
+  });
+
   describe('BUG 2 — textarea Remarque : correction automatique native iOS activée', () => {
     it('déclare explicitement autoCorrect="on", spellCheck et autoCapitalize="sentences"', () => {
       render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);

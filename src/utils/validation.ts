@@ -217,22 +217,39 @@ export function validatePerson(fields: RawPersonFields): ValidationResult {
 // ---------- Validation du formulaire personne ----------
 
 /**
+ * Adresse d'une fiche EXISTANTE, conservée telle quelle lorsque sa rue n'a
+ * pas pu être résolue automatiquement (voir `validatePersonForm` ci-dessous).
+ */
+export interface LegacyAddress {
+  adresse: string;
+  numeroRue: number | null;
+  rueId: string | null;
+}
+
+/**
  * Valide le formulaire Ajouter / Modifier une personne (numéro + rue, puis
  * localisation selon `fields.mode`).
+ *
+ * `legacyAddress`, fourni UNIQUEMENT en modification d'une fiche existante
+ * dont l'utilisateur n'a pas lui-même touché Numéro/Rue (voir `PersonForm`) :
+ * si le select Rue est resté vide (rue non résolue — ancienne fiche sans
+ * `rueId`, référence obsolète, ou nom de rue non reconnu), on n'exige JAMAIS
+ * une rue pour pouvoir enregistrer les AUTRES champs (ex. Remarque), et on ne
+ * reconstruit JAMAIS `adresse` à partir d'une rue non confirmée par
+ * l'utilisateur — `adresse`/`numeroRue`/`rueId` d'origine sont alors
+ * conservés à l'identique. Protection contre la perte silencieuse de
+ * données : dès que l'utilisateur choisit lui-même une rue (ou modifie le
+ * numéro), ce filet ne s'applique plus et la validation normale reprend.
  */
-export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFormResult {
+export function validatePersonForm(
+  fields: RawPersonForm,
+  rues: Rue[],
+  legacyAddress?: LegacyAddress | null,
+): PersonFormResult {
   const errors: PersonFormErrors = {};
 
   const nom = cleanStored(fields.nom);
   if (nom === '') errors.nom = 'Le nom est obligatoire.';
-
-  const numeroRue = parseNumero(fields.numero);
-  if (numeroRue === null) {
-    errors.numero = 'Le numéro doit être un entier strictement positif (chiffres uniquement).';
-  }
-
-  const rue = rues.find((r) => r.id === fields.rueId);
-  if (!rue) errors.rueId = 'La rue est obligatoire.';
 
   const panneau = parsePanneau(fields.panneau);
   if (!panneau.ok) errors.panneau = 'Le panneau doit être un entier positif.';
@@ -260,8 +277,33 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
   const prenomClean = cleanStored(fields.prenom);
   const prenom = prenomClean === '' ? null : prenomClean;
 
+  let numeroRue: number | null;
+  let rueId: string | null;
+  let adresse: string;
+
+  const preserveLegacyAddress = legacyAddress != null && fields.rueId === '';
+
+  if (preserveLegacyAddress) {
+    // Rue non résolue et jamais touchée par l'utilisateur : on préserve
+    // l'adresse d'origine mot pour mot, sans la reconstruire.
+    numeroRue = legacyAddress.numeroRue;
+    rueId = legacyAddress.rueId;
+    adresse = legacyAddress.adresse;
+  } else {
+    const parsedNumero = parseNumero(fields.numero);
+    if (parsedNumero === null) {
+      errors.numero = 'Le numéro doit être un entier strictement positif (chiffres uniquement).';
+    }
+    const rue = rues.find((r) => r.id === fields.rueId);
+    if (!rue) errors.rueId = 'La rue est obligatoire.';
+
+    numeroRue = parsedNumero;
+    rueId = rue?.id ?? null;
+    adresse = rue && parsedNumero !== null ? buildAdresse(parsedNumero, rue.nom) : '';
+  }
+
   const valid = Object.keys(errors).length === 0;
-  if (!valid || !rue || numeroRue === null) {
+  if (!valid) {
     return { valid: false, errors };
   }
 
@@ -271,9 +313,9 @@ export function validatePersonForm(fields: RawPersonForm, rues: Rue[]): PersonFo
     value: {
       nom,
       prenom,
-      adresse: buildAdresse(numeroRue, rue.nom),
+      adresse,
       numeroRue,
-      rueId: rue.id,
+      rueId,
       colonne,
       panneau: panneau.value,
       logement,

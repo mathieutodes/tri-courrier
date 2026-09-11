@@ -369,3 +369,64 @@ describe('parseReexpedition', () => {
     expect(parseReexpedition('n’importe quoi')).toBe(false);
   });
 });
+
+describe('validatePersonForm — legacyAddress (protection contre la perte silencieuse de données)', () => {
+  const rues: Rue[] = [{ id: 'r1', nom: 'Rue Victor Hugo' }];
+  const baseUnresolved = {
+    nom: 'DUPONT',
+    prenom: 'Jean',
+    numero: '', // rue jamais résolue -> numéro non plus affiché
+    rueId: '', // select resté sur "— Choisir une rue —"
+    mode: 'colonne' as const,
+    colonne: '5',
+    panneau: '',
+    logement: '',
+    reexpedition: false,
+    remarque: '',
+  };
+  const legacyAddress = { adresse: '35 Rue Claude Kogan', numeroRue: 35, rueId: null };
+
+  it('rue non résolue + legacyAddress fourni : enregistre sans exiger de rue, adresse/numeroRue préservés', () => {
+    const r = validatePersonForm(
+      { ...baseUnresolved, remarque: 'Boîte derrière la porte' },
+      rues,
+      legacyAddress,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.value?.adresse).toBe('35 Rue Claude Kogan');
+    expect(r.value?.numeroRue).toBe(35);
+    expect(r.value?.rueId).toBeNull();
+    expect(r.value?.remarque).toBe('Boîte derrière la porte');
+    expect(r.errors.rueId).toBeUndefined();
+    expect(r.errors.numero).toBeUndefined();
+  });
+
+  it('rue non résolue SANS legacyAddress (comportement normal, inchangé) : rue obligatoire', () => {
+    const r = validatePersonForm(baseUnresolved, rues);
+    expect(r.valid).toBe(false);
+    expect(r.errors.rueId).toBeDefined();
+  });
+
+  it('rue effectivement choisie : legacyAddress est ignoré, adresse reconstruite normalement', () => {
+    const r = validatePersonForm(
+      { ...baseUnresolved, numero: '24', rueId: 'r1' },
+      rues,
+      legacyAddress,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.value?.adresse).toBe('24 Rue Victor Hugo');
+    expect(r.value?.rueId).toBe('r1');
+  });
+
+  it('legacyAddress avec rueId déjà null (très ancienne fiche) : préservé tel quel, sans jamais devenir une rue inventée', () => {
+    const r = validatePersonForm(baseUnresolved, rues, {
+      adresse: '80 Avenue de Constantine',
+      numeroRue: null,
+      rueId: null,
+    });
+    expect(r.valid).toBe(true);
+    expect(r.value?.adresse).toBe('80 Avenue de Constantine');
+    expect(r.value?.numeroRue).toBeNull();
+    expect(r.value?.rueId).toBeNull();
+  });
+});
