@@ -15,11 +15,13 @@ interface Props {
   onSubmit: (value: PersonInput) => void;
   onCancel: () => void;
   /**
-   * Place immédiatement le curseur (et fait défiler jusqu'au) champ Remarque
-   * au montage — utilisé par le bouton « APPORTER UNE PRÉCISION » de l'écran
-   * résultat. Best-effort : Safari/iOS peut refuser d'ouvrir le clavier pour
-   * un focus programmatique trop éloigné du geste utilisateur d'origine ; on
-   * ne tente aucun contournement agressif dans ce cas.
+   * Fait défiler la page jusqu'au champ Remarque au montage — utilisé par le
+   * bouton « APPORTER UNE PRÉCISION » de l'écran résultat. Positionne
+   * UNIQUEMENT la vue : ne donne PAS le focus par programmation (voir
+   * l'effet correspondant plus bas pour le détail). L'utilisateur touche
+   * lui-même le champ pour l'activer ; le focus provient alors réellement
+   * de son geste, ce qui laisse iOS gérer son clavier et son autocorrection
+   * exactement comme pour n'importe quel champ de texte natif.
    */
   autoFocusRemarque?: boolean;
 }
@@ -95,18 +97,28 @@ export default function PersonForm({
 
   useEffect(() => {
     if (!autoFocusRemarque) return;
-    // Best-effort, déclenché par l'intention utilisateur du clic « APPORTER
-    // UNE PRÉCISION » (voir SearchResultView) : on amène le champ dans la
-    // zone visible et on lui donne le focus. Aucune relance/hack en cas
-    // d'échec (Safari peut légitimement refuser d'ouvrir le clavier ici).
-    // `scrollIntoView` n'existe pas dans tous les environnements (ex. jsdom en
-    // test) : accès défensif via `?.` sur la méthode elle-même, pas seulement
-    // sur la ref.
+    // Déclenché par l'intention utilisateur du clic « APPORTER UNE
+    // PRÉCISION » (voir SearchResultView) : on amène le champ dans la zone
+    // visible, SANS lui donner le focus par programmation.
+    //
+    // Volontairement PAS de `.focus()` ici : un focus déclenché par du code
+    // (plutôt que par un geste tactile direct de l'utilisateur sur le champ)
+    // peut amener Safari/iOS — notamment en PWA installée sur l'écran
+    // d'accueil — à initialiser le clavier avec des réglages de saisie
+    // dégradés (autocorrection, suggestions), de façon peu fiable selon les
+    // versions d'iOS. En laissant l'utilisateur toucher lui-même la
+    // textarea, le focus provient d'une vraie interaction tactile et iOS
+    // gère alors son clavier normalement, comme pour n'importe quel champ
+    // de texte natif.
+    //
+    // `scrollIntoView` n'existe pas dans tous les environnements (ex. jsdom
+    // en test) : accès défensif via `?.` sur la méthode elle-même, pas
+    // seulement sur la ref.
     remarqueRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
-    remarqueRef.current?.focus();
-    // Volontairement `[]` : ce focus initial ne doit se déclencher qu'une
-    // fois au montage, jamais se répéter si `autoFocusRemarque` était déjà
-    // vrai (il ne change pas après coup pour une instance de formulaire donnée).
+    // Volontairement `[]` : ce positionnement initial ne doit se déclencher
+    // qu'une fois au montage, jamais se répéter si `autoFocusRemarque` était
+    // déjà vrai (il ne change pas après coup pour une instance de formulaire
+    // donnée).
   }, []);
 
   // Adresse actuelle non retrouvée automatiquement : on la montre pour info.

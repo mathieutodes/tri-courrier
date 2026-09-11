@@ -97,11 +97,21 @@ describe('DatabasePage — ouverture directe via editPersonId (APPORTER UNE PRÉ
     expect((screen.getByLabelText(/^nom/i) as HTMLInputElement).value).toBe('MARTIN');
   });
 
-  it('place le focus dans la textarea Remarque à l’ouverture', () => {
+  it('positionne la vue sur la textarea Remarque à l’ouverture, SANS lui donner le focus (l’utilisateur la touche lui-même)', () => {
+    const scrollIntoViewSpy = vi.fn();
+    HTMLTextAreaElement.prototype.scrollIntoView = scrollIntoViewSpy;
+    const focusSpy = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
+
     mockPersons = [person('p1', 'DUPONT')];
     render(<DatabasePage editPersonId="p1" />);
 
-    expect(document.activeElement).toBe(screen.getByLabelText(/remarque/i));
+    expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1);
+    expect(focusSpy).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(screen.getByLabelText(/remarque/i));
+
+    focusSpy.mockRestore();
+    // @ts-expect-error nettoyage du polyfill de test (absent par défaut de jsdom)
+    delete HTMLTextAreaElement.prototype.scrollIntoView;
   });
 
   it('un ID inexistant ne provoque aucun plantage : repli propre sur la liste', () => {

@@ -265,7 +265,13 @@ describe('PersonForm', () => {
     expect(value.remarque).toBe('Une précision');
   });
 
-  it('autoFocusRemarque : place le focus dans la textarea Remarque au montage', () => {
+  it('autoFocusRemarque : positionne la vue sur Remarque (scrollIntoView) SANS jamais lui donner le focus', () => {
+    // jsdom n'implémente pas `scrollIntoView` par défaut : on le fournit
+    // nous-mêmes pour pouvoir vérifier qu'il est bien appelé.
+    const scrollIntoViewSpy = vi.fn();
+    HTMLTextAreaElement.prototype.scrollIntoView = scrollIntoViewSpy;
+    const focusSpy = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
+
     render(
       <PersonForm
         initial={existingPerson({})}
@@ -275,10 +281,25 @@ describe('PersonForm', () => {
         autoFocusRemarque
       />,
     );
-    expect(document.activeElement).toBe(screen.getByLabelText(/remarque/i));
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1);
+    // Le cœur de la correction : plus aucun `.focus()` programmatique, quel
+    // que soit le contexte — c'est à l'utilisateur de toucher le champ
+    // lui-même pour que Safari/iOS gère normalement le clavier et
+    // l'autocorrection native.
+    expect(focusSpy).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(screen.getByLabelText(/remarque/i));
+
+    focusSpy.mockRestore();
+    // @ts-expect-error nettoyage du polyfill de test (absent par défaut de jsdom)
+    delete HTMLTextAreaElement.prototype.scrollIntoView;
   });
 
-  it('sans autoFocusRemarque, le focus n’est pas forcé dans la textarea', () => {
+  it('sans autoFocusRemarque, ni scroll ni focus ne sont déclenchés', () => {
+    const scrollIntoViewSpy = vi.fn();
+    HTMLTextAreaElement.prototype.scrollIntoView = scrollIntoViewSpy;
+    const focusSpy = vi.spyOn(HTMLTextAreaElement.prototype, 'focus');
+
     render(
       <PersonForm
         initial={existingPerson({})}
@@ -287,7 +308,14 @@ describe('PersonForm', () => {
         onCancel={() => {}}
       />,
     );
+
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+    expect(focusSpy).not.toHaveBeenCalled();
     expect(document.activeElement).not.toBe(screen.getByLabelText(/remarque/i));
+
+    focusSpy.mockRestore();
+    // @ts-expect-error nettoyage du polyfill de test (absent par défaut de jsdom)
+    delete HTMLTextAreaElement.prototype.scrollIntoView;
   });
 
   describe('BUG 1 — régression : ne jamais altérer adresse/rue en ne modifiant que la remarque', () => {
