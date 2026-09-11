@@ -232,6 +232,12 @@ body {
   background: var(--surface-2);
 }
 
+/* Bouton de filtre (adresse…) quand un filtre est actif : bordure d'accent. */
+.filter-btn.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 .btn-danger {
   background: var(--danger-btn);
   color: #ffffff;
@@ -331,6 +337,14 @@ body {
 .home-inner-active {
   justify-content: flex-start;
   padding-top: var(--s-4);
+}
+
+/* Logo au-dessus du titre : sans cadre, sans carte, ~90–110px sur iPhone 375px. */
+.home-logo {
+  display: block;
+  align-self: center;
+  width: clamp(84px, 26vw, 108px);
+  height: auto;
 }
 
 .home-title {
@@ -942,7 +956,10 @@ select.input {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--s-5);
+  /* Safe area iOS : le contenu de la modale ne colle jamais aux bords
+     (Dynamic Island / home indicator) sur un iPhone. */
+  padding: calc(var(--safe-top) + var(--s-5)) calc(var(--safe-right) + var(--s-5))
+    calc(var(--safe-bottom) + var(--s-5)) calc(var(--safe-left) + var(--s-5));
   background: rgba(10, 10, 12, 0.32);
 }
 
@@ -953,6 +970,34 @@ select.input {
   background: var(--surface);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-card);
+}
+
+/* Filtre par adresse : modale plus large, liste scrollable en interne. */
+.address-filter-modal {
+  max-width: 420px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.address-filter-list {
+  list-style: none;
+  margin: 0 0 var(--s-3);
+  padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.address-filter-list .checkbox-row {
+  margin: 0;
+}
+
+.address-filter-empty {
+  text-align: center;
 }
 
 .modal-text {

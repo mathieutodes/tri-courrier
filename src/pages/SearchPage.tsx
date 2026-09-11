@@ -130,6 +130,13 @@ export default function SearchPage() {
       </button>
 
       <div className={`home-inner${hasQuery ? ' home-inner-active' : ''}`}>
+        {!hasQuery && (
+          <img
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt=""
+            className="home-logo"
+          />
+        )}
         <h1 className="home-title">TRI COURRIER</h1>
 
         <form

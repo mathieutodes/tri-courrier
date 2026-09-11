@@ -23,6 +23,7 @@ import type { Person, PersonInput } from '../types/person';
 import type { Rue } from '../types/rue';
 import { normalizeText } from '../utils/normalizeText';
 import { getColumnColor } from '../utils/columnColors';
+import { buildAddressOptions, filterPersonsByAddresses } from '../utils/addressFilter';
 import {
   buildImportPreview,
   downloadFile,
@@ -33,6 +34,7 @@ import {
 } from '../services/importExport';
 import PersonForm from '../components/PersonForm';
 import RueManager from '../components/RueManager';
+import AddressFilterModal from '../components/AddressFilterModal';
 import { BackIcon } from '../components/icons';
 import { DEMO_PERSONS } from '../services/demoData';
 
@@ -58,6 +60,8 @@ export default function DatabasePage() {
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteAllConfirmed, setDeleteAllConfirmed] = useState(false);
   const [deleteAllBusy, setDeleteAllBusy] = useState(false);
+  const [addressFilterOpen, setAddressFilterOpen] = useState(false);
+  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,9 +71,33 @@ export default function DatabasePage() {
     void refreshRues();
   }, []);
 
+  // Filtre par ADRESSE COMPLÈTE (page Base de données uniquement) : source =
+  // person.adresse, jamais le store `rues`. Recalculé à chaque changement de
+  // `persons`, donc toujours à jour après import / ajout / modification /
+  // suppression, sans rechargement de page.
+  const addressOptions = useMemo(() => buildAddressOptions(persons), [persons]);
+
+  // Si une adresse sélectionnée disparaît complètement de la base (toutes ses
+  // personnes supprimées/modifiées), on nettoie automatiquement la sélection
+  // pour éviter un filtre fantôme.
+  useEffect(() => {
+    setSelectedAddresses((prev) => {
+      if (prev.size === 0) return prev;
+      const validKeys = new Set(addressOptions.map((o) => o.key));
+      let changed = false;
+      const next = new Set<string>();
+      for (const key of prev) {
+        if (validKeys.has(key)) next.add(key);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [addressOptions]);
+
   const filtered = useMemo(() => {
     const q = normalizeText(adminQuery);
-    const list = [...persons].sort((a, b) => {
+    const byAddress = filterPersonsByAddresses(persons, selectedAddresses);
+    const list = [...byAddress].sort((a, b) => {
       const c = normalizeText(a.nom).localeCompare(normalizeText(b.nom));
       return c !== 0 ? c : normalizeText(a.prenom).localeCompare(normalizeText(b.prenom));
     });
@@ -80,7 +108,14 @@ export default function DatabasePage() {
         normalizeText(p.prenom).includes(q) ||
         normalizeText(p.adresse).includes(q),
     );
-  }, [persons, adminQuery]);
+  }, [persons, adminQuery, selectedAddresses]);
+
+  const addressFilterLabel =
+    selectedAddresses.size === 0
+      ? 'FILTRER PAR ADRESSE'
+      : selectedAddresses.size === 1
+        ? 'ADRESSE · 1 SÉLECTIONNÉE'
+        : `ADRESSES · ${selectedAddresses.size} SÉLECTIONNÉES`;
 
   function flash(text: string) {
     setMessage(text);
@@ -351,6 +386,15 @@ export default function DatabasePage() {
             value={adminQuery}
             onChange={(e) => setAdminQuery(e.target.value)}
           />
+          <button
+            type="button"
+            className={`btn btn-secondary btn-block filter-btn${
+              selectedAddresses.size > 0 ? ' active' : ''
+            }`}
+            onClick={() => setAddressFilterOpen(true)}
+          >
+            {addressFilterLabel}
+          </button>
         </div>
 
         <p className="hint">Données stockées uniquement sur cet appareil.</p>
@@ -468,6 +512,15 @@ export default function DatabasePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {addressFilterOpen && (
+        <AddressFilterModal
+          options={addressOptions}
+          selected={selectedAddresses}
+          onApply={setSelectedAddresses}
+          onClose={() => setAddressFilterOpen(false)}
+        />
       )}
     </div>
   );
