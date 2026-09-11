@@ -5,7 +5,7 @@ import { ensurePersonsLoaded, refreshPersons, usePersons } from '../db/personSto
 import type { Person } from '../types/person';
 import { normalizeText } from '../utils/normalizeText';
 import SearchResultView from '../components/SearchResultView';
-import { DatabaseIcon, SearchIcon } from '../components/icons';
+import { DatabaseIcon, PersonIcon, SearchIcon } from '../components/icons';
 
 type Phase =
   | { kind: 'idle' }
@@ -92,8 +92,13 @@ export default function SearchPage() {
                 className="suggestion"
                 onClick={() => setPhase({ kind: 'one', person: p })}
               >
-                <span className="suggestion-name">{fullName(p)}</span>
-                <span className="suggestion-addr">{p.adresse}</span>
+                <span className="avatar avatar-blue avatar-sm" aria-hidden="true">
+                  <PersonIcon size={17} />
+                </span>
+                <span className="suggestion-text">
+                  <span className="suggestion-name">{fullName(p)}</span>
+                  <span className="suggestion-addr">{p.adresse}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -184,8 +189,13 @@ export default function SearchPage() {
                   className="suggestion"
                   onClick={() => setPhase({ kind: 'one', person: p })}
                 >
-                  <span className="suggestion-name">{fullName(p)}</span>
-                  <span className="suggestion-addr">{p.adresse}</span>
+                  <span className="avatar avatar-blue avatar-sm" aria-hidden="true">
+                    <PersonIcon size={17} />
+                  </span>
+                  <span className="suggestion-text">
+                    <span className="suggestion-name">{fullName(p)}</span>
+                    <span className="suggestion-addr">{p.adresse}</span>
+                  </span>
                 </button>
               ))
             )}

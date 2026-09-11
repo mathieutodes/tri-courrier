@@ -646,40 +646,44 @@ describe('PersonForm', () => {
     });
   });
 
-  describe('BUG 3 (suite) — correction STRUCTURELLE : Remarque hors du <form> Nom/Prénom/Numéro/Rue', () => {
-    it("1. Remarque n'est plus un descendant DOM du <form> contenant Nom/Prénom/Numéro/Rue", () => {
+  describe('BUG 3 (suite) — Remarque redevenue un champ normal du formulaire (séparation DOM abandonnée)', () => {
+    // La tentative précédente de sortir Remarque du <form> (via
+    // `form="person-form"`) a été testée sur un vrai iPhone et n'a PAS
+    // empêché Safari/iOS de proposer « Remplir un contact » : elle est donc
+    // abandonnée. Ces tests vérifient le retour à la structure simple —
+    // Remarque et les boutons sont de nouveau des descendants DOM normaux
+    // d'un unique <form>, sans aucun attribut `form="..."`.
+
+    it('Remarque est un descendant DOM normal du même <form> que Nom/Prénom/Numéro/Rue', () => {
       render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
       const nomInput = screen.getByLabelText(/^nom/i) as HTMLInputElement;
       const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
 
       const identityForm = nomInput.closest('form');
       expect(identityForm).not.toBeNull();
-      // Le formulaire qui contient Nom ne contient PAS la textarea Remarque :
-      // elle est un frère (sibling) dans le DOM, pas un enfant.
-      expect(identityForm?.contains(textarea)).toBe(false);
-      // Remontée depuis la textarea elle-même : aucun ancêtre <form>.
-      expect(textarea.closest('form')).toBeNull();
+      // Même formulaire, aucune séparation DOM artificielle.
+      expect(textarea.closest('form')).toBe(identityForm);
+      expect(identityForm?.contains(textarea)).toBe(true);
     });
 
-    it('la textarea reste formellement associée au même formulaire via `form="person-form"` (mécanisme HTML standard, pas un hack)', () => {
+    it('ni la textarea ni le bouton ENREGISTRER ne portent plus d’attribut `form="..."` (association artificielle supprimée)', () => {
       render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
-      const nomInput = screen.getByLabelText(/^nom/i) as HTMLInputElement;
       const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
-      const identityForm = nomInput.closest('form');
-
-      expect(textarea.getAttribute('form')).toBe('person-form');
-      // Propriété IDL `form` : l'élément associé, même hors de l'arbre DOM du <form>.
-      expect(textarea.form).toBe(identityForm);
+      const submitBtn = screen.getByRole('button', { name: 'ENREGISTRER' });
+      expect(textarea.getAttribute('form')).toBeNull();
+      expect(submitBtn.getAttribute('form')).toBeNull();
+      // Le <form> n'a plus besoin d'un id dédié à cette association.
+      expect(document.querySelector('form')?.getAttribute('id')).toBeNull();
     });
 
-    it('7. un seul bouton ENREGISTRER est présent pour l’utilisateur (aucun second formulaire, aucune double sauvegarde)', () => {
+    it('un seul bouton ENREGISTRER est présent pour l’utilisateur (aucun second formulaire, aucune double sauvegarde)', () => {
       render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
       expect(screen.getAllByRole('button', { name: /^enregistrer$/i })).toHaveLength(1);
       // Un seul <form> dans tout le composant.
       expect(document.querySelectorAll('form')).toHaveLength(1);
     });
 
-    it('2. Remarque conserve tous ses attributs de saisie native malgré la restructuration', () => {
+    it('Remarque conserve tous ses attributs de saisie native (autoComplete, autoCorrect, autoCapitalize, spellCheck)', () => {
       render(<PersonForm rues={rues} onSubmit={() => {}} onCancel={() => {}} />);
       const textarea = screen.getByLabelText(/remarque/i) as HTMLTextAreaElement;
       expect(textarea.getAttribute('autocomplete')).toBe('off');
@@ -688,7 +692,7 @@ describe('PersonForm', () => {
       expect(textarea.getAttribute('spellcheck')).toBe('true');
     });
 
-    it('3. modifier Remarque puis Enregistrer (bouton hors du <form>) sauvegarde bien la remarque', () => {
+    it('modifier Remarque puis Enregistrer sauvegarde bien la remarque', () => {
       const onSubmit = vi.fn();
       render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
 
@@ -705,7 +709,7 @@ describe('PersonForm', () => {
       expect(onSubmit.mock.calls[0][0].remarque).toBe('Sonner deux fois');
     });
 
-    it('4. modifier simultanément une information Person ET Remarque sauvegarde bien les deux ensemble', () => {
+    it('modifier simultanément une information Person ET Remarque sauvegarde bien les deux ensemble', () => {
       const onSubmit = vi.fn();
       render(
         <PersonForm
@@ -729,7 +733,7 @@ describe('PersonForm', () => {
       expect(value.remarque).toBe('Interphone cassé');
     });
 
-    it('6. la validation existante fonctionne toujours malgré la restructuration (ex. panneau obligatoire avec logement)', () => {
+    it('la validation existante fonctionne toujours (ex. panneau obligatoire avec logement)', () => {
       const onSubmit = vi.fn();
       render(<PersonForm rues={rues} onSubmit={onSubmit} onCancel={() => {}} />);
 

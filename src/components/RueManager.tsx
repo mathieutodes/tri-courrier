@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Rue } from '../types/rue';
 import { cleanStored, normalizeText } from '../utils/normalizeText';
-import { BackIcon } from './icons';
+import { BackIcon, StreetIcon } from './icons';
 
 interface Props {
   rues: Rue[];
@@ -64,7 +64,7 @@ export default function RueManager({ rues, onAdd, onUpdate, onDelete, onBack }: 
       </header>
 
       <div className="screen-body">
-        <form className="rue-add" onSubmit={handleAdd}>
+        <form className="rue-add form-card card" onSubmit={handleAdd}>
           <input
             className="input"
             type="text"
@@ -104,7 +104,12 @@ export default function RueManager({ rues, onAdd, onUpdate, onDelete, onBack }: 
                 </>
               ) : (
                 <>
-                  <span className="card-title">{rue.nom}</span>
+                  <div className="card-row-top">
+                    <span className="avatar avatar-blue avatar-sm card-avatar" aria-hidden="true">
+                      <StreetIcon size={16} />
+                    </span>
+                    <span className="card-title">{rue.nom}</span>
+                  </div>
                   <div className="row-actions">
                     <button type="button" className="link-btn" onClick={() => startEdit(rue)}>
                       Modifier

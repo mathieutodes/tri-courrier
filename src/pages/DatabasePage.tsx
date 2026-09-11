@@ -37,7 +37,7 @@ import {
 import PersonForm from '../components/PersonForm';
 import RueManager from '../components/RueManager';
 import AddressFilterModal from '../components/AddressFilterModal';
-import { BackIcon, SearchIcon } from '../components/icons';
+import { BackIcon, FilterIcon, PersonIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { DEMO_PERSONS } from '../services/demoData';
 
 type View =
@@ -387,22 +387,111 @@ export default function DatabasePage({ editPersonId = null }: Props) {
       </header>
 
       <div className="screen-body">
-        {/* Sous-titre discret sous le titre "Base de données" : calculé à
-            partir des données déjà chargées, aucun nouveau stockage. */}
-        <p className="db-subtitle">
-          {persons.length} destinataire{persons.length > 1 ? 's' : ''}
-        </p>
+        {/* En-tête compact : nombre de destinataires (calculé à partir des
+            données déjà chargées, aucun nouveau stockage) + action AJOUTER
+            compacte à droite. */}
+        <div className="db-header-row">
+          <p className="db-subtitle">
+            {persons.length} destinataire{persons.length > 1 ? 's' : ''}
+          </p>
+          <button
+            type="button"
+            className="db-add-btn"
+            onClick={() => setView({ kind: 'add' })}
+            aria-label="Ajouter une personne"
+          >
+            <PlusIcon size={20} />
+          </button>
+        </div>
 
         {message && <div className="toast">{message}</div>}
 
-        <div className="db-actions">
+        <div className="db-search">
+          <span className="section-label">Rechercher</span>
+          <div className="search-field">
+            <span className="search-field-icon">
+              <SearchIcon size={20} />
+            </span>
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Rechercher nom, prénom, adresse…"
+              value={adminQuery}
+              onChange={(e) => setAdminQuery(e.target.value)}
+            />
+          </div>
           <button
             type="button"
-            className="btn btn-primary btn-block"
-            onClick={() => setView({ kind: 'add' })}
+            className={`btn btn-secondary btn-block filter-btn${
+              selectedAddresses.size > 0 ? ' active' : ''
+            }`}
+            onClick={() => setAddressFilterOpen(true)}
           >
-            AJOUTER UNE PERSONNE
+            <FilterIcon size={16} />
+            {addressFilterLabel}
           </button>
+        </div>
+
+        <ul className="card-list">
+          {filtered.map((p) => {
+            const color = p.colonne !== null ? getColumnColor(p.colonne) : null;
+            return (
+              <li key={p.id} className="card-row">
+                <div className="card-row-top">
+                  <span className="avatar avatar-blue avatar-sm card-avatar" aria-hidden="true">
+                    <PersonIcon size={16} />
+                  </span>
+                  <div className="card-main">
+                    <span className="card-title">{fullName(p)}</span>
+                    <span className="card-sub">{p.adresse}</span>
+                  </div>
+                </div>
+                <span className="card-meta">
+                  {p.panneau !== null && (
+                    <span className="panneau-badge">Panneau {p.panneau}</span>
+                  )}
+                  {p.colonne !== null && color && (
+                    <span
+                      className="colonne-badge"
+                      style={{ background: color.bg, color: color.fg }}
+                    >
+                      Colonne {p.colonne}
+                    </span>
+                  )}
+                  {p.colonne === null && p.logement !== null && p.logement !== '' && (
+                    <span className="logement-badge">Logement {p.logement}</span>
+                  )}
+                  {p.reexpedition && <span className="reexpedition-badge">RÉEXPÉDITION</span>}
+                  {p.remarque !== null && p.remarque !== '' && (
+                    <span className="remarque-badge">REMARQUE</span>
+                  )}
+                </span>
+                <div className="row-actions">
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setView({ kind: 'edit', person: p })}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    className="link-btn danger"
+                    onClick={() => setToDelete(p)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+          {filtered.length === 0 && <li className="empty-row">Aucune entrée.</li>}
+        </ul>
+
+        {/* Outils : rues, import/export, données de démo — regroupés en une
+            carte propre plutôt que dispersés en pleine largeur. */}
+        <div className="db-tools-card card">
+          <span className="form-card-title">Outils</span>
           <button
             type="button"
             className="btn btn-secondary btn-block"
@@ -434,87 +523,8 @@ export default function DatabasePage({ editPersonId = null }: Props) {
               + Données de démonstration (dev)
             </button>
           )}
+          <p className="hint">Données stockées uniquement sur cet appareil.</p>
         </div>
-
-        <div className="db-search">
-          <span className="section-label">Rechercher</span>
-          <div className="search-field">
-            <span className="search-field-icon">
-              <SearchIcon size={20} />
-            </span>
-            <input
-              className="search-input"
-              type="text"
-              placeholder="Rechercher nom, prénom, adresse…"
-              value={adminQuery}
-              onChange={(e) => setAdminQuery(e.target.value)}
-            />
-          </div>
-          <button
-            type="button"
-            className={`btn btn-secondary btn-block filter-btn${
-              selectedAddresses.size > 0 ? ' active' : ''
-            }`}
-            onClick={() => setAddressFilterOpen(true)}
-          >
-            {addressFilterLabel}
-          </button>
-        </div>
-
-        <p className="hint">Données stockées uniquement sur cet appareil.</p>
-
-        <ul className="card-list">
-          {filtered.map((p) => {
-            const color = p.colonne !== null ? getColumnColor(p.colonne) : null;
-            return (
-              <li key={p.id} className="card-row">
-                <div className="card-main">
-                  <span className="card-title">{fullName(p)}</span>
-                  <span className="card-sub">{p.adresse}</span>
-                  <span className="card-meta">
-                    {p.panneau !== null && (
-                      <span className="panneau-badge">Panneau {p.panneau}</span>
-                    )}
-                    {p.colonne !== null && color && (
-                      <span
-                        className="colonne-badge"
-                        style={{ background: color.bg, color: color.fg }}
-                      >
-                        Colonne {p.colonne}
-                      </span>
-                    )}
-                    {p.colonne === null && p.logement !== null && p.logement !== '' && (
-                      <span className="logement-badge">Logement {p.logement}</span>
-                    )}
-                    {p.reexpedition && (
-                      <span className="reexpedition-badge">RÉEXPÉDITION</span>
-                    )}
-                    {p.remarque !== null && p.remarque !== '' && (
-                      <span className="remarque-badge">REMARQUE</span>
-                    )}
-                  </span>
-                </div>
-                <div className="row-actions">
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setView({ kind: 'edit', person: p })}
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    type="button"
-                    className="link-btn danger"
-                    onClick={() => setToDelete(p)}
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-          {filtered.length === 0 && <li className="empty-row">Aucune entrée.</li>}
-        </ul>
 
         <div className="danger-zone">
           <span className="danger-zone-title">Zone dangereuse</span>

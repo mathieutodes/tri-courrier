@@ -165,233 +165,234 @@ export default function PersonForm({
   }
 
   return (
-    <>
-      {/* Remarque et les boutons d'action sont volontairement rendus HORS de
-          ce <form> (voir plus bas) — Nom/Prénom/Numéro/Rue restent seuls à
-          l'intérieur. Le `<form id="person-form">` reste l'UNIQUE formulaire
-          de la page (aucun formulaire imbriqué, aucun second bouton
-          Enregistrer, aucune deuxième sauvegarde) : les éléments extérieurs
-          s'y rattachent via l'attribut HTML standard `form="person-form"`
-          (voir la textarea Remarque et le bouton ENREGISTRER plus bas), qui
-          les associe au formulaire exactement comme s'ils y étaient imbriqués
-          — `handleSubmit` continue de recevoir la totalité de `fields` via le
-          state React, inchangé. */}
-      <form id="person-form" className="form" onSubmit={handleSubmit} noValidate>
-      <label className="field">
-        <span className="field-label">Nom *</span>
-        <input
-          className="input"
-          type="text"
-          value={fields.nom}
-          autoCapitalize="characters"
-          autoCorrect="off"
-          onChange={(e) => set('nom', e.target.value)}
-        />
-        {errors.nom && <span className="field-error">{errors.nom}</span>}
-      </label>
-
-      <label className="field">
-        <span className="field-label">Prénom</span>
-        <input
-          className="input"
-          type="text"
-          value={fields.prenom}
-          onChange={(e) => set('prenom', e.target.value)}
-        />
-      </label>
-
-      <label className="field">
-        <span className="field-label">Numéro *</span>
-        <input
-          className="input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          step={1}
-          value={fields.numero}
-          onChange={(e) => set('numero', e.target.value)}
-        />
-        {errors.numero && <span className="field-error">{errors.numero}</span>}
-      </label>
-
-      <label className="field">
-        <span className="field-label">Rue *</span>
-        {rues.length === 0 ? (
-          <span className="field-hint">
-            Aucune rue enregistrée. Ajoutez d'abord une rue via « Gérer les rues ».
-          </span>
-        ) : (
-          <select
+    <form className="form" onSubmit={handleSubmit} noValidate>
+      {/* Regroupement en cartes : purement présentationnel (voir tête de
+          fichier) — les champs eux-mêmes, leurs noms, leur logique et leur
+          ordre de saisie restent strictement identiques. */}
+      <div className="form-card card">
+        <span className="form-card-title">Identité</span>
+        <label className="field">
+          <span className="field-label">Nom *</span>
+          <input
             className="input"
-            value={fields.rueId}
-            onChange={(e) => set('rueId', e.target.value)}
-          >
-            <option value="">— Choisir une rue —</option>
-            {rues.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.nom}
-              </option>
-            ))}
-          </select>
-        )}
-        {errors.rueId && <span className="field-error">{errors.rueId}</span>}
-        {legacyAdresse && (
-          <span className="field-hint">Adresse actuelle : {legacyAdresse}</span>
-        )}
-      </label>
+            type="text"
+            value={fields.nom}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            onChange={(e) => set('nom', e.target.value)}
+          />
+          {errors.nom && <span className="field-error">{errors.nom}</span>}
+        </label>
 
-      <div className="field">
-        <span className="field-label">Localisation *</span>
-        <div className="mode-toggle" role="tablist" aria-label="Type de localisation">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={fields.mode === 'colonne'}
-            className={`mode-toggle-btn${fields.mode === 'colonne' ? ' active' : ''}`}
-            onClick={() => setMode('colonne')}
-          >
-            Colonne
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={fields.mode === 'logement'}
-            className={`mode-toggle-btn${fields.mode === 'logement' ? ' active' : ''}`}
-            onClick={() => setMode('logement')}
-          >
-            Panneau + Logement
-          </button>
-        </div>
-        <span className="field-hint">
-          Choisissez soit une colonne, soit un panneau accompagné d'un numéro de logement.
-        </span>
+        <label className="field">
+          <span className="field-label">Prénom</span>
+          <input
+            className="input"
+            type="text"
+            value={fields.prenom}
+            onChange={(e) => set('prenom', e.target.value)}
+          />
+        </label>
       </div>
 
-      {fields.mode === 'colonne' ? (
-        <>
-          <label className="field">
-            <span className="field-label">Colonne * (1 à 16)</span>
-            <input
-              className="input"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={16}
-              value={fields.colonne}
-              onChange={(e) => set('colonne', e.target.value)}
-            />
-            {errors.colonne && <span className="field-error">{errors.colonne}</span>}
-          </label>
+      <div className="form-card card">
+        <span className="form-card-title">Adresse</span>
+        <label className="field">
+          <span className="field-label">Numéro *</span>
+          <input
+            className="input"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={fields.numero}
+            onChange={(e) => set('numero', e.target.value)}
+          />
+          {errors.numero && <span className="field-error">{errors.numero}</span>}
+        </label>
 
-          <label className="field">
-            <span className="field-label">Panneau</span>
-            <input
+        <label className="field">
+          <span className="field-label">Rue *</span>
+          {rues.length === 0 ? (
+            <span className="field-hint">
+              Aucune rue enregistrée. Ajoutez d'abord une rue via « Gérer les rues ».
+            </span>
+          ) : (
+            <select
               className="input"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={fields.panneau}
-              onChange={(e) => set('panneau', e.target.value)}
-            />
-            {errors.panneau && <span className="field-error">{errors.panneau}</span>}
-          </label>
-        </>
-      ) : (
-        <>
-          <label className="field">
-            <span className="field-label">Panneau *</span>
-            <input
-              className="input"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={fields.panneau}
-              onChange={(e) => set('panneau', e.target.value)}
-            />
-            {errors.panneau && <span className="field-error">{errors.panneau}</span>}
-          </label>
+              value={fields.rueId}
+              onChange={(e) => set('rueId', e.target.value)}
+            >
+              <option value="">— Choisir une rue —</option>
+              {rues.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nom}
+                </option>
+              ))}
+            </select>
+          )}
+          {errors.rueId && <span className="field-error">{errors.rueId}</span>}
+          {legacyAdresse && (
+            <span className="field-hint">Adresse actuelle : {legacyAdresse}</span>
+          )}
+        </label>
+      </div>
 
-          <label className="field">
-            <span className="field-label">Numéro de logement *</span>
-            <input
-              className="input"
-              type="text"
-              placeholder="ex. 314, A12"
-              value={fields.logement}
-              onChange={(e) => set('logement', e.target.value)}
-            />
-            {errors.logement && <span className="field-error">{errors.logement}</span>}
-          </label>
-        </>
-      )}
+      <div className="form-card card">
+        <span className="form-card-title">Boîte aux lettres</span>
+        <div className="field">
+          <span className="field-label">Localisation *</span>
+          <div className="mode-toggle" role="tablist" aria-label="Type de localisation">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={fields.mode === 'colonne'}
+              className={`mode-toggle-btn${fields.mode === 'colonne' ? ' active' : ''}`}
+              onClick={() => setMode('colonne')}
+            >
+              Colonne
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={fields.mode === 'logement'}
+              className={`mode-toggle-btn${fields.mode === 'logement' ? ' active' : ''}`}
+              onClick={() => setMode('logement')}
+            >
+              Panneau + Logement
+            </button>
+          </div>
+          <span className="field-hint">
+            Choisissez soit une colonne, soit un panneau accompagné d'un numéro de logement.
+          </span>
+        </div>
 
-      <label className="checkbox-row checkbox-row-neutral">
-        <input
-          type="checkbox"
-          checked={fields.reexpedition}
-          onChange={(e) => setReexpedition(e.target.checked)}
-        />
-        <span>Réexpédition</span>
-      </label>
-      </form>
+        {fields.mode === 'colonne' ? (
+          <>
+            <label className="field">
+              <span className="field-label">Colonne * (1 à 16)</span>
+              <input
+                className="input"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={16}
+                value={fields.colonne}
+                onChange={(e) => set('colonne', e.target.value)}
+              />
+              {errors.colonne && <span className="field-error">{errors.colonne}</span>}
+            </label>
 
-      {/* Remarque : NON descendante du <form> ci-dessus (voir commentaire en
-          tête de composant) — correction structurelle, en plus des attributs
-          déjà en place, pour que Safari/iOS n'ait plus la moindre raison de
-          rattacher ce champ de texte libre au groupe Nom/Prénom/Numéro/Rue
-          qu'il interprète comme une fiche Contact. `form="person-form"`
-          l'associe malgré tout formellement au bon formulaire (mécanisme
-          HTML standard, pas un hack) : sa valeur continue de vivre dans le
-          même state React (`fields.remarque`) que tous les autres champs, et
-          `handleSubmit` la reçoit exactement comme avant. Visuellement et
-          fonctionnellement, rien ne change pour l'utilisateur — toujours la
-          même position, entre Réexpédition et les boutons. */}
-      <label className="field">
-        <span className="field-label">Remarque</span>
-        <textarea
-          ref={remarqueRef}
-          form="person-form"
-          className="input textarea"
-          name="freeform-note"
-          id="freeform-note"
-          rows={3}
-          placeholder="ex. Boîte au nom de MARTIN, BAL derrière la porte…"
-          value={fields.remarque}
-          onChange={(e) => set('remarque', e.target.value)}
-          // Champ de texte libre en langage naturel, PAS une donnée de
-          // contact : `autoComplete="off"` indique explicitement à Safari de
-          // ne pas y appliquer d'auto-remplissage (Contact, adresse…) — sans
-          // toucher au clavier lui-même, qui doit rester NATIF complet
-          // (autocorrection, suggestions, majuscule automatique en début de
-          // phrase), jamais désactivé, et jamais de correction "maison".
-          // Concerne UNIQUEMENT ce champ : Nom/Prénom/Numéro/Rue ne sont pas
-          // modifiés.
-          //
-          // Limite connue : même hors du <form>, Safari applique aussi ses
-          // propres heuristiques et peut continuer à détecter un Contact
-          // dans certains cas — cette restructuration réduit encore les
-          // signaux disponibles, elle n'en garantit pas la disparition.
-          autoComplete="off"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-          spellCheck={true}
-        />
-        <span className="field-hint">Facultatif. Visible sur l'écran résultat.</span>
-      </label>
+            <label className="field">
+              <span className="field-label">Panneau</span>
+              <input
+                className="input"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={fields.panneau}
+                onChange={(e) => set('panneau', e.target.value)}
+              />
+              {errors.panneau && <span className="field-error">{errors.panneau}</span>}
+            </label>
+          </>
+        ) : (
+          <>
+            <label className="field">
+              <span className="field-label">Panneau *</span>
+              <input
+                className="input"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={fields.panneau}
+                onChange={(e) => set('panneau', e.target.value)}
+              />
+              {errors.panneau && <span className="field-error">{errors.panneau}</span>}
+            </label>
+
+            <label className="field">
+              <span className="field-label">Numéro de logement *</span>
+              <input
+                className="input"
+                type="text"
+                placeholder="ex. 314, A12"
+                value={fields.logement}
+                onChange={(e) => set('logement', e.target.value)}
+              />
+              {errors.logement && <span className="field-error">{errors.logement}</span>}
+            </label>
+          </>
+        )}
+      </div>
+
+      <div className="form-card card">
+        <span className="form-card-title">Informations</span>
+        <label className="checkbox-row checkbox-row-neutral">
+          <input
+            type="checkbox"
+            checked={fields.reexpedition}
+            onChange={(e) => setReexpedition(e.target.checked)}
+          />
+          <span>Réexpédition</span>
+        </label>
+      </div>
+
+      {/* Remarque : redevenue un champ NORMAL du formulaire, comme les
+          autres — la tentative précédente de la sortir du <form> (via
+          `form="person-form"`) a été testée sur un vrai iPhone et n'a PAS
+          empêché Safari/iOS de proposer « Remplir un contact ». Cette
+          séparation structurelle est donc abandonnée : elle n'apportait
+          aucun bénéfice réel, seulement de la complexité. Les attributs
+          natifs ci-dessous (`autoComplete="off"`, `autoCorrect="on"`,
+          `autoCapitalize="sentences"`, `spellCheck`) restent en place — ce
+          sont les seuls leviers standards disponibles pour ce champ. Carte
+          visuelle "Informations" (suite) : mêmes tokens `.form-card`/`.card`
+          que la carte Réexpédition juste au-dessus, avec le même espacement
+          que le reste du formulaire — les deux se lisent comme un seul
+          groupe. */}
+      <div className="form-card card">
+        <label className="field">
+          <span className="field-label">Remarque</span>
+          <textarea
+            ref={remarqueRef}
+            className="input textarea"
+            name="freeform-note"
+            id="freeform-note"
+            rows={3}
+            placeholder="ex. Boîte au nom de MARTIN, BAL derrière la porte…"
+            value={fields.remarque}
+            onChange={(e) => set('remarque', e.target.value)}
+            // Champ de texte libre en langage naturel, PAS une donnée de
+            // contact : `autoComplete="off"` indique explicitement à Safari de
+            // ne pas y appliquer d'auto-remplissage (Contact, adresse…) — sans
+            // toucher au clavier lui-même, qui doit rester NATIF complet
+            // (autocorrection, suggestions, majuscule automatique en début de
+            // phrase), jamais désactivé, et jamais de correction "maison".
+            // Concerne UNIQUEMENT ce champ : Nom/Prénom/Numéro/Rue ne sont pas
+            // modifiés.
+            //
+            // Limite connue et confirmée sur iPhone réel : Safari applique ses
+            // propres heuristiques indépendamment de ces attributs et peut
+            // malgré tout proposer « Remplir un contact » sur ce champ — ni
+            // `autoComplete="off"` ni la position dans le DOM ne le garantissent.
+            autoComplete="off"
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            spellCheck={true}
+          />
+          <span className="field-hint">Facultatif. Visible sur l'écran résultat.</span>
+        </label>
+      </div>
 
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           ANNULER
         </button>
-        {/* `form="person-form"` : ce bouton n'est plus un descendant du
-            <form> (Remarque le sépare visuellement de lui dans le DOM), mais
-            reste le SEUL et UNIQUE déclencheur de `handleSubmit` — associé
-            formellement au même formulaire, toujours un seul enregistrement,
-            aucune sauvegarde dupliquée. */}
-        <button type="submit" form="person-form" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary">
           ENREGISTRER
         </button>
       </div>
-    </>
+    </form>
   );
 }
