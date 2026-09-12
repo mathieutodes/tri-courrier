@@ -91,6 +91,13 @@
      l'écran résultat (voir `.card-hero`) — n'affecte jamais les cartes de
      liste (Base de données, suggestions, rues), qui gardent `--radius-card`. */
   --radius-hero: 24px;
+  /* Hauteur MINIMALE commune aux 4 cartes de l'écran résultat (identité,
+     réexpédition, emplacement, remarque — voir `.result-card-shell`) :
+     calée sur la carte la plus haute (emplacement, chiffres compris) pour
+     que les 4 rectangles extérieurs coïncident exactement sur iPhone 15 Pro
+     Max, sans jamais empêcher une remarque exceptionnellement longue de
+     grandir au-delà (min-height, pas height). */
+  --result-card-min-height: 148px;
   --radius-pill: 999px;
   --r-sm: 12px;
   --r-md: var(--radius-control);
@@ -324,12 +331,12 @@ body {
   height: 34px;
 }
 
-/* Avatar légèrement plus présent — carte identité de l'écran résultat
-   uniquement (voir PHOTO 2) : les listes (suggestions, Base de données)
-   restent sur la taille par défaut pour ne pas perdre en densité. */
+/* Avatar plus présent — cartes de l'écran résultat uniquement (identité,
+   emplacement, réexpédition, remarque) : les listes (suggestions, Base de
+   données) restent sur la taille par défaut pour ne pas perdre en densité. */
 .avatar-lg {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
 }
 
 /* =========================================================================
@@ -799,29 +806,43 @@ body {
      Avec cette cause supprimée, plus rien n'est artificiellement repoussé :
      s'il reste de l'espace libre sur un grand iPhone, il se retrouve
      simplement sous APPORTER UNE PRÉCISION, jamais entre les cartes. */
-  padding: calc(var(--safe-top) + clamp(10px, 3vh, 20px))
+  padding: calc(var(--safe-top) + clamp(12px, 3.2vh, 24px))
     calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-4))
     calc(var(--safe-left) + var(--s-4));
-  gap: var(--s-4);
+  /* iPhone 15 Pro Max en priorité (grand écran) : espace vertical utilisé
+     intelligemment plutôt qu'un rendu compact — gap régulier un peu plus
+     généreux que l'ancienne passe. */
+  gap: 20px;
 }
 
-/* Navigation "‹ Recherche" : petite capsule en haut à gauche — déclenche
-   EXACTEMENT `onNewSearch` (même action que l'ancien bouton NOUVELLE
-   RECHERCHE, désormais supprimé du bas d'écran : une seule action de
-   nouvelle recherche, jamais deux). */
+/* Barre du haut : "‹ Recherche" à gauche, "•••" à droite — même hauteur,
+   bien équilibrés horizontalement (voir PHOTO CIBLE). */
+.result-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  max-width: 460px;
+  align-self: center;
+}
+
+/* Navigation "‹ Recherche" : petite capsule — déclenche EXACTEMENT
+   `onNewSearch` (même action que l'ancien bouton NOUVELLE RECHERCHE,
+   désormais supprimé du bas d'écran : une seule action de nouvelle
+   recherche, jamais deux). */
 .result-nav-back {
   flex: 0 0 auto;
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-bottom: -4px;
-  padding: 8px 14px 8px 10px;
+  gap: 4px;
+  padding: 10px 16px 10px 12px;
   background: var(--glass-bg-strong);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-pill);
   color: var(--ios-blue);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--glass-shadow-sm);
@@ -833,19 +854,62 @@ body {
   opacity: 0.7;
 }
 
-/* CARTE IDENTITÉ : avatar rond sur petite surface bleu pâle à gauche, NOM +
-   adresse à droite — remplace l'ancien NOM/adresse flottant seuls sur le
-   fond. Reste une carte comme les autres (mêmes tokens `.card`). */
-.identity-card {
+/* Bouton "•••" — ouvre le menu Modifier/Supprimer. Même hauteur visuelle que
+   "‹ Recherche" (≈ 40px), même famille de surface. */
+.result-menu-btn {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  color: var(--ios-blue);
+  cursor: pointer;
+  box-shadow: var(--glass-shadow-sm);
+  transition: opacity var(--t-fast), background var(--t-fast);
+}
+
+.result-menu-btn:active {
+  background: var(--surface-soft);
+  opacity: 0.7;
+}
+
+/* ---- Coquille commune aux 4 cartes de l'écran résultat --------------------
+   Identité / Réexpédition / Emplacement / Remarque partagent EXACTEMENT la
+   même largeur, le même rayon, le même alignement horizontal et la même
+   hauteur MINIMALE (`--result-card-min-height`, une seule variable, voir
+   :root) — une règle unique, appliquée en plus de la classe propre à chaque
+   carte, plutôt que quatre déclarations séparées qui ne feraient
+   qu'approcher la même valeur. Les paddings/dispositions internes restent
+   propres à chaque carte (voir `.identity-card`, `.reexpedition-banner`,
+   `.result-card`, `.remarque-block` ci-dessous) : seul le RECTANGLE
+   EXTÉRIEUR est garanti identique. `min-height` (jamais `height`) laisse une
+   remarque exceptionnellement longue grandir au-delà sans jamais tronquer
+   son texte. `display:flex; align-items:center` recentre verticalement le
+   contenu de chaque carte lorsque sa hauteur naturelle est inférieure à
+   cette hauteur minimale commune. */
+.result-card-shell {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 100%;
+  max-width: 460px;
+  min-height: var(--result-card-min-height);
   display: flex;
   align-items: center;
-  gap: var(--s-4);
-  width: 100%;
-  max-width: 440px;
-  align-self: center;
-  padding: 16px var(--s-4);
+  border-radius: var(--radius-hero);
   animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
+}
+
+/* CARTE IDENTITÉ : avatar rond sur petite surface bleu pâle à gauche, NOM +
+   adresse à droite — remplace l'ancien NOM/adresse flottant seuls sur le
+   fond. Reste une carte comme les autres (mêmes tokens `.card`). Géométrie
+   extérieure (largeur/hauteur/rayon) fournie par `.result-card-shell`. */
+.identity-card {
+  gap: var(--s-4);
+  padding: 22px var(--s-4);
 }
 
 .result-header {
@@ -861,7 +925,13 @@ body {
    grâce à `min-width: 0` sur `.result-header` ci-dessus : jamais tronqué. */
 .result-name {
   width: 100%;
-  font-size: clamp(1.15rem, 5vw, 1.4rem);
+  /* Sensiblement agrandi (≈ +28 % sur iPhone 15 Pro Max) : redevient
+     clairement l'élément typographique principal de la carte identité —
+     même graisse (800) et même casse qu'avant, uniquement la taille change.
+     `word-break` (voir plus bas) garantit qu'un nom long (ex.
+     « KHATCHADOURIAN Alexandre-Sébastien ») se répartit toujours proprement
+     sur plusieurs lignes plutôt que de déborder. */
+  font-size: clamp(1.45rem, 6.4vw, 1.95rem);
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -869,41 +939,42 @@ body {
   word-break: break-word;
 }
 
-/* Adresse : plus petite et gris bleuté, information de VÉRIFICATION
-   uniquement — jamais aussi importante que le nom ni que le
-   panneau/colonne/logement pendant la tournée. */
+/* Typographie de TEXTE SECONDAIRE — commune et STRICTEMENT identique pour
+   l'adresse (carte identité), le texte sous RÉEXPÉDITION et le contenu de
+   la carte REMARQUE (voir `.reexpedition-banner-subtitle` et
+   `.remarque-text` plus bas pour leurs propres couleurs) : même font-size,
+   font-weight (500, texte normal, jamais gras) et line-height. Règle
+   unique : plus aucun risque de divergence future. */
+.result-address,
+.reexpedition-banner-subtitle,
+.remarque-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Adresse : gris bleuté, information de VÉRIFICATION uniquement — jamais
+   aussi importante que le nom ni que le panneau/colonne/logement pendant la
+   tournée. Typographie partagée avec RÉEXPÉDITION/REMARQUE, voir ci-dessus. */
 .result-address {
   margin: 0;
   width: 100%;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.35;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 /* CARTE EMPLACEMENT — la plus importante pendant la tournée, une vraie carte
-   HORIZONTALE inspirée de la PHOTO CIBLE : pastille icône présente à gauche,
-   chiffres nettement lisibles à droite. Cible ≈ 130–145px de hauteur sur
-   iPhone 375px (dans la fourchette 125–150px demandée), QUELLE QUE SOIT la
-   combinaison affichée — il n'existe pas de variante "solo" agrandie :
-   COLONNE seule utilise exactement la même carte, la même taille de chiffre
-   que PANNEAU+COLONNE ou PANNEAU+LOGEMENT (voir `.rfig-num` plus bas, qui ne
+   HORIZONTALE généreuse inspirée de la PHOTO CIBLE : pastille icône présente
+   à gauche, chiffres très lisibles à droite. QUELLE QUE SOIT la combinaison
+   affichée — il n'existe pas de variante "solo" agrandie : COLONNE seule
+   utilise exactement la même carte, la même taille de chiffre que
+   PANNEAU+COLONNE ou PANNEAU+LOGEMENT (voir `.rfig-num` plus bas, qui ne
    dépend plus du nombre d'informations affichées). */
 .result-card {
-  flex: 0 0 auto;
-  align-self: center;
-  width: 100%;
-  max-width: 440px;
-  display: flex;
   flex-direction: row;
-  align-items: center;
   gap: var(--s-4);
-  padding: 30px var(--s-4);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-hero);
-  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
+  padding: 34px var(--s-4);
 }
 
 .result-card-icon {
@@ -912,55 +983,80 @@ body {
 
 /* La zone chiffres occupe le reste de la largeur et centre son contenu
    (1 ou 2 "rfig") — même composition, même hauteur, que la carte affiche une
-   seule information (COLONNE) ou deux (PANNEAU + COLONNE/LOGEMENT). */
+   seule information (COLONNE) ou deux (PANNEAU + COLONNE/LOGEMENT).
+   Le numéro de LOGEMENT est volontairement plus petit que celui de
+   PANNEAU/COLONNE (voir `.rfig-num-logement`), donc les deux colonnes "rfig"
+   n'ont pas la même hauteur de contenu — il faut pourtant satisfaire DEUX
+   contraintes en même temps : les LIBELLÉS alignés en haut, ET les VALEURS
+   alignées en bas (jamais les deux "centrés" indépendamment, ce qui les
+   désynchronise). `align-items: stretch` (valeur par défaut de Flexbox,
+   remise ici explicitement) étire chaque colonne "rfig" à la hauteur de la
+   plus grande — puis `justify-content: space-between` sur `.rfig`
+   (ci-dessous) pousse son libellé tout en haut de cette hauteur commune et
+   son chiffre tout en bas : les libellés démarrent donc tous à la même
+   position verticale ET les chiffres se terminent tous à la même position
+   verticale, quelle que soit la taille du numéro. */
 .result-card-figures {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: clamp(var(--s-4), 6vw, var(--s-5));
 }
 
-/* Un « champ » PANNEAU ou COLONNE : label au-dessus, numéro en dessous. */
+/* Un « champ » PANNEAU, COLONNE ou LOGEMENT : label au-dessus, numéro en
+   dessous. `justify-content: space-between` (voir commentaire ci-dessus)
+   colle le libellé en haut et le chiffre en bas de la colonne — `gap: 4px`
+   reste un minimum si jamais l'espace disponible était plus petit que ça
+   (cas dégénéré), sans quoi cet espace est entièrement absorbé par le
+   `space-between`. */
 .rfig {
   flex: 0 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 4px;
 }
 
-/* Libellé compact et lisible — PANNEAU, pas P A N N E A U : un léger
-   espacement de capitale (0.02em), jamais le letter-spacing démesuré
-   d'avant. */
-.rfig-label {
-  font-size: clamp(0.78rem, 3vw, 0.92rem);
+/* Libellé PANNEAU / COLONNE / LOGEMENT : RIGOUREUSEMENT identique dans les
+   trois cas — aucun modificateur par libellé (l'ancien `.rfig-label-panneau`
+   a été supprimé : la longueur/importance de la valeur en dessous ne doit
+   jamais influencer la typographie du titre, seule la VALEUR peut s'adapter,
+   voir `.rfig-num-logement`). Fait désormais partie de la typographie de
+   TITRE DE SECTION — commune et STRICTEMENT identique pour
+   RÉEXPÉDITION / PANNEAU / COLONNE / LOGEMENT / REMARQUE (voir
+   `.reexpedition-banner-title` et `.remarque-label` plus bas pour les 2
+   autres couleurs) : même font-size, font-weight, line-height,
+   letter-spacing et casse — SEULE la couleur diffère d'un titre à l'autre
+   (rouge pour RÉEXPÉDITION, bleu pour PANNEAU/COLONNE/LOGEMENT, gris-bleuté
+   pour REMARQUE). Règle unique : plus aucun risque de divergence future. */
+.reexpedition-banner-title,
+.rfig-label,
+.remarque-label {
+  font-size: clamp(0.86rem, 3.2vw, 1.04rem);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text-secondary);
 }
 
-/* PANNEAU reste immédiatement identifiable : label légèrement agrandi
-   (repère visuel net demandé pendant la tournée) — le CHIFFRE, lui, suit
-   maintenant exactement la même couleur que COLONNE/LOGEMENT (voir
-   `.rfig-num-neutral` ci-dessous : palette bleue uniforme, plus de
-   distinction "neutre vs accent"). */
-.rfig-label-panneau {
-  font-size: clamp(0.86rem, 3.4vw, 1.02rem);
+.rfig-label {
+  /* Toujours la MÊME règle unique pour PANNEAU/COLONNE/LOGEMENT (voir
+     ci-dessus pour la typographie partagée avec RÉEXPÉDITION/REMARQUE). */
+  color: var(--ios-blue);
 }
 
 /* Les deux numéros : MÊME taille, MÊME couleur bleu iOS — PANNEAU, COLONNE
    et LOGEMENT suivent désormais un langage couleur strictement identique
-   (voir `.rfig-num-neutral`). Cible ≈ 48–56px sur iPhone 375px : nettement
-   lisible pendant la tournée, sans revenir au chiffre géant d'origine
-   (jusqu'à 13rem/208px) ni rester trop discret comme dans la passe
-   précédente. */
+   (voir `.rfig-num-neutral`). Cible ≈ 52–60px sur iPhone 15 Pro Max (priorité
+   — voir en-tête de fichier) : nettement lisible pendant la tournée, sans
+   revenir au chiffre géant d'origine (jusqu'à 13rem/208px) ni rester trop
+   discret comme dans la passe précédente. */
 .rfig-num {
-  font-size: clamp(2.5rem, 13vw, 3.4rem);
+  font-size: clamp(2.7rem, 13.5vw, 3.75rem);
   font-weight: 800;
   line-height: 1;
   color: var(--card-accent);
@@ -972,14 +1068,14 @@ body {
 }
 
 /* Numéro de LOGEMENT : chaîne libre pouvant atteindre 4 caractères et plus
-   (ex. "8407", "5125") — cible ≈ 38–46px : reste nettement plus petit que
+   (ex. "8407", "5125", "A12") — reste nettement plus petit que
    PANNEAU/COLONNE pour tenir confortablement SUR UNE SEULE LIGNE à côté de
-   son libellé sur iPhone, sans jamais déborder, se couper ni revenir à la
-   ligne. */
+   son libellé, sans jamais déborder, se couper ni revenir à la ligne. */
 .rfig-num-logement {
-  font-size: clamp(2rem, 10.5vw, 2.6rem);
+  font-size: clamp(2.15rem, 10.8vw, 2.9rem);
   overflow-wrap: anywhere;
   word-break: break-word;
+  white-space: nowrap;
 }
 
 /* Séparation verticale TRÈS discrète entre PANNEAU et COLONNE/LOGEMENT :
@@ -994,75 +1090,82 @@ body {
   border-radius: 2px;
 }
 
-/* Bandeau RÉEXPÉDITION : surface rose/rouge extrêmement pâle et lumineuse,
-   pastille icône généreuse, titre rouge — élégant mais impossible à manquer.
-   Bordure quasiment invisible, ombre douce et diffuse. Pas de chevron : pas
-   d'action associée à cette carte. N'affecte jamais la mise en page de la
-   carte panneau/colonne/logement, qui reste pleinement visible juste en
-   dessous. */
+/* Bandeau RÉEXPÉDITION : rouge/rose nettement plus vif et lumineux que le
+   reste de l'écran — fond léger mais clairement perceptible (pas gris),
+   contour rouge/rose subtil, titre rouge vif. Pas de chevron : pas d'action
+   associée à cette carte. N'affecte jamais la mise en page de la carte
+   panneau/colonne/logement, qui reste pleinement visible juste en dessous. */
+/* Le rouge signale le CONTENU (fond, pastille, icône, titre, ombre) —
+   jamais le CONTOUR : aucune `border` colorée ici, contrairement aux passes
+   précédentes. La bordure suit exactement le même traitement neutre que les
+   3 autres cartes (`rgba(255, 255, 255, 0.7)`, héritée de `.card-hero` — non
+   redéclarée). Seule l'ombre porte une très légère teinte rouge (même
+   structure — liseré clair + ombre diffuse — que `.card-hero`, juste
+   recolorée), pour rester dans la même famille visuelle sans dessiner de
+   cadre coloré. */
 .reexpedition-banner {
-  flex: 0 0 auto;
-  align-self: center;
-  display: flex;
-  align-items: center;
   gap: var(--s-3);
-  width: 100%;
-  max-width: 440px;
-  padding: 14px var(--s-4);
-  background: rgba(255, 59, 48, 0.055);
-  border: 1px solid rgba(255, 59, 48, 0.1);
-  border-radius: var(--radius-hero);
-  box-shadow: 0 16px 32px -22px rgba(200, 40, 40, 0.3);
+  padding: 16px var(--s-4);
+  background: rgba(255, 59, 48, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 1px 2px rgba(30, 60, 120, 0.04),
+    0 20px 38px -24px rgba(255, 59, 48, 0.26);
   color: var(--text-primary);
   text-align: left;
-  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 .reexpedition-banner-icon {
   flex: 0 0 auto;
 }
 
+/* Rouge vif iOS dédié à CET écran (n'affecte pas `--icon-red`, partagé avec
+   le badge RÉEXPÉDITION de la Base de données — voir tête de fichier design
+   system) : pastille et icône nettement plus chaleureuses/lumineuses. */
+.reexpedition-banner .avatar-red {
+  background: rgba(255, 59, 48, 0.18);
+  color: #ff3b30;
+}
+
 .reexpedition-banner svg {
-  color: var(--icon-red);
+  color: #ff3b30;
 }
 
 .reexpedition-banner-text {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
 }
 
 .reexpedition-banner-title {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--icon-red);
+  /* Typographie partagée avec PANNEAU/COLONNE/LOGEMENT et REMARQUE — voir
+     la règle commune plus haut. Seule la couleur change ici. */
+  color: #ff3b30;
 }
 
 .reexpedition-banner-subtitle {
-  font-size: 12.5px;
-  font-weight: 550;
-  line-height: 1.3;
+  /* Typographie partagée avec l'adresse et le texte de remarque — voir la
+     règle commune plus haut. Seule la couleur change ici. */
   color: var(--text-secondary);
 }
 
 /* Bloc REMARQUE : grosse pastille icône bleu pâle à gauche (même langage que
-   l'avatar identité), REMARQUE + texte à droite — un peu plus généreux
-   verticalement, tout en restant secondaire par rapport à la carte
-   emplacement au-dessus. */
+   l'avatar identité), REMARQUE + texte à droite — généreux verticalement,
+   tout en restant secondaire par rapport à la carte emplacement au-dessus. */
 .remarque-block {
-  flex: 0 0 auto;
-  align-self: center;
-  display: flex;
+  /* Contenu propre à cette carte (voir tête de fichier design system :
+     paddings/organisation internes libres d'une carte à l'autre) : icône
+     alignée en haut du texte plutôt que centrée verticalement avec lui —
+     `align-items: flex-start` REMPLACE volontairement le `center` hérité de
+     `.result-card-shell`, pour qu'une remarque longue sur plusieurs lignes
+     garde toujours son icône au niveau du libellé, jamais centrée au milieu
+     du paragraphe. Le RECTANGLE EXTÉRIEUR (largeur/hauteur mini/rayon) reste
+     identique aux 3 autres cartes, fourni par `.result-card-shell`. */
   align-items: flex-start;
   gap: var(--s-4);
-  width: 100%;
-  max-width: 440px;
-  padding: 18px var(--s-4);
+  padding: 20px var(--s-4);
   text-align: left;
-  animation: glass-in 220ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 .remarque-icon {
@@ -1075,26 +1178,23 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 3px;
+  gap: 5px;
+  padding-top: 4px;
 }
 
 .remarque-label {
+  /* Typographie partagée avec RÉEXPÉDITION et PANNEAU/COLONNE/LOGEMENT —
+     voir la règle commune plus haut. Seule la couleur change ici. */
   display: block;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
 /* Texte de la remarque : lisible mais délibérément SECONDAIRE par rapport à
    l'emplacement (pas de grosse typographie). */
 .remarque-text {
+  /* Typographie partagée avec l'adresse et le texte de réexpédition — voir
+     la règle commune plus haut. Seule la couleur change ici. */
   margin: 0;
-  font-size: 14.5px;
-  font-weight: 500;
-  line-height: 1.4;
   color: var(--text-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1104,15 +1204,88 @@ body {
 /* APPORTER UNE PRÉCISION : seule action de bas d'écran désormais (NOUVELLE
    RECHERCHE a été remplacée par la navigation "‹ Recherche" en haut). Un peu
    moins large que les cartes (≈ 90 % du conteneur, jamais bord à bord),
-   pilule haute et confortable, ombre bleue douce. */
+   pilule haute et confortable, ombre bleue douce, effet de profondeur/lumière
+   (léger liseré clair en haut). */
 .result-secondary {
   flex: 0 0 auto;
   align-self: center;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
   min-height: 62px;
   border-radius: var(--radius-pill);
-  box-shadow: 0 10px 24px -10px rgba(10, 132, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 12px 26px -10px rgba(10, 132, 255, 0.5);
+}
+
+/* =========================================================================
+   Menu "•••" de l'écran résultat — action sheet iOS (Modifier / Supprimer).
+   Réutilise `.modal-backdrop` déjà existant ; propre au groupe d'actions
+   uniquement, aucune nouvelle logique de fond/overlay.
+   ========================================================================= */
+
+.action-sheet {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.action-sheet-group {
+  background: var(--glass-bg-strong);
+  border-radius: var(--radius-hero);
+  overflow: hidden;
+  box-shadow: var(--glass-shadow);
+  animation: glass-in 200ms cubic-bezier(0.22, 0.8, 0.2, 1);
+}
+
+.action-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--s-4);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ios-blue);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.action-sheet-item:last-child {
+  border-bottom: none;
+}
+
+.action-sheet-item:active {
+  background: var(--surface-soft);
+}
+
+.action-sheet-item.danger {
+  color: var(--danger);
+}
+
+.action-sheet-cancel {
+  width: 100%;
+  min-height: 56px;
+  background: var(--glass-bg-strong);
+  border: none;
+  border-radius: var(--radius-hero);
+  color: var(--ios-blue);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow);
+  transition: background var(--t-fast);
+}
+
+.action-sheet-cancel:active {
+  background: var(--surface-soft);
 }
 
 /* =========================================================================

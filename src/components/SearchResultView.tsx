@@ -1,7 +1,17 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { navigateToEditPerson } from '../App';
+import { deletePersonSynced } from '../db/personStore';
 import type { Person } from '../types/person';
-import { BackIcon, MailboxIcon, NoteIcon, PencilIcon, PersonIcon, WarningIcon } from './icons';
+import {
+  BackIcon,
+  MailboxIcon,
+  MoreIcon,
+  NoteIcon,
+  PencilIcon,
+  PersonIcon,
+  TrashIcon,
+  TruckIcon,
+} from './icons';
 
 // Les chiffres PANNEAU/COLONNE/LOGEMENT suivent tous le même bleu iOS (voir
 // section « couleurs » du design system) — l'ancienne palette de 16 couleurs
@@ -20,6 +30,30 @@ function fullName(person: Person): string {
 }
 
 export default function SearchResultView({ person, onNewSearch }: Props) {
+  // Menu « ••• » (Modifier / Supprimer) et confirmation de suppression —
+  // purement local à cet écran, aucun nouveau système d'édition/suppression :
+  // « Modifier la fiche » réutilise exactement `navigateToEditPerson` (le
+  // mécanisme déjà utilisé par APPORTER UNE PRÉCISION) et « Supprimer la
+  // fiche » réutilise exactement `deletePersonSynced` (le même mécanisme que
+  // la Base de données, IndexedDB compris — aucune logique dupliquée).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    setDeleting(true);
+    try {
+      await deletePersonSynced(person.id);
+      setConfirmDeleteOpen(false);
+      // Ce destinataire n'existe plus : on ne peut plus rester sur son écran
+      // résultat — retour propre à la recherche, exactement comme
+      // NOUVELLE RECHERCHE / "‹ Recherche".
+      onNewSearch();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const hasPanneau = person.panneau !== null && person.panneau !== undefined;
   const hasColonne = person.colonne !== null && person.colonne !== undefined;
   // La colonne reste prioritaire à l'affichage si — cas limite — une fiche
@@ -48,22 +82,32 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
 
   return (
     <div className="result">
-      {/* Navigation "‹ Recherche" : réutilise EXACTEMENT `onNewSearch` (la
-          même action que l'ancien bouton NOUVELLE RECHERCHE, supprimé plus
-          bas) — aucune nouvelle fonctionnalité, uniquement un point d'entrée
-          différent vers le même comportement. */}
-      <button type="button" className="result-nav-back" onClick={onNewSearch}>
-        <BackIcon size={16} />
-        <span>Recherche</span>
-      </button>
+      {/* Barre du haut : "‹ Recherche" (réutilise EXACTEMENT `onNewSearch`,
+          la même action que l'ancien bouton NOUVELLE RECHERCHE) à gauche,
+          menu "•••" (Modifier / Supprimer) à droite — équilibrés
+          horizontalement. */}
+      <div className="result-topbar">
+        <button type="button" className="result-nav-back" onClick={onNewSearch}>
+          <BackIcon size={16} />
+          <span>Recherche</span>
+        </button>
+        <button
+          type="button"
+          className="result-menu-btn"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Options"
+        >
+          <MoreIcon size={18} />
+        </button>
+      </div>
 
       {/* CARTE IDENTITÉ : avatar rond sur petite surface bleu pâle à gauche,
           NOM Prénom + adresse à droite. `min-width: 0` (voir CSS) laisse un
           nom long (ex. « KHATCHADOURIAN ») se répartir proprement sur
           plusieurs lignes, jamais tronqué. */}
-      <div className="identity-card card card-hero">
+      <div className="identity-card result-card-shell card card-hero">
         <span className="avatar avatar-blue avatar-lg" aria-hidden="true">
-          <PersonIcon size={23} />
+          <PersonIcon size={25} />
         </span>
         <div className="result-header">
           <div className="result-name">{fullName(person)}</div>
@@ -76,9 +120,9 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       </div>
 
       {person.reexpedition && (
-        <div className="reexpedition-banner card-hero" role="status">
+        <div className="reexpedition-banner result-card-shell card card-hero" role="status">
           <span className="avatar avatar-red avatar-lg reexpedition-banner-icon" aria-hidden="true">
-            <WarningIcon size={21} />
+            <TruckIcon size={25} />
           </span>
           <div className="reexpedition-banner-text">
             <span className="reexpedition-banner-title">RÉEXPÉDITION</span>
@@ -90,21 +134,22 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       )}
 
       {/* CARTE EMPLACEMENT — priorité maximale pendant la tournée. Carte
-          HORIZONTALE compacte : pastille icône à gauche, chiffres à droite —
-          la hauteur ne varie (quasiment) pas selon 1 ou 2 informations
-          affichées (voir CSS : plus de mode "solo" agrandi). */}
-      <div className="result-card card card-hero" style={cardStyle}>
+          HORIZONTALE généreuse : pastille icône à gauche, grands chiffres à
+          droite — la hauteur ne varie (quasiment) pas selon 1 ou 2
+          informations affichées (voir CSS : pas de mode "solo" distinct). */}
+      <div className="result-card result-card-shell card card-hero" style={cardStyle}>
         <span className="avatar avatar-blue avatar-lg result-card-icon" aria-hidden="true">
-          <MailboxIcon size={24} />
+          <MailboxIcon size={26} />
         </span>
         <div className="result-card-figures">
           {showPanneauFigure && (
             <>
-              {/* PANNEAU : label légèrement agrandi (repère immédiat), mais
-                  chiffre au même bleu iOS que COLONNE/LOGEMENT — plus de
-                  distinction "neutre vs accent" (voir design system). */}
+              {/* PANNEAU : même typographie de libellé que COLONNE/LOGEMENT
+                  (voir `.rfig-label` — plus aucun modificateur par titre) et
+                  même bleu iOS pour le chiffre — plus de distinction "neutre
+                  vs accent" (voir design system). */}
               <div className="rfig">
-                <span className="rfig-label rfig-label-panneau">PANNEAU</span>
+                <span className="rfig-label">PANNEAU</span>
                 <span className="rfig-num rfig-num-neutral">{person.panneau}</span>
               </div>
               <div className="rfig-divider" aria-hidden="true" />
@@ -127,9 +172,9 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
       </div>
 
       {person.remarque !== null && person.remarque.trim() !== '' && (
-        <div className="remarque-block card card-hero">
+        <div className="remarque-block result-card-shell card card-hero">
           <span className="avatar avatar-blue avatar-lg remarque-icon" aria-hidden="true">
-            <NoteIcon size={20} />
+            <NoteIcon size={23} />
           </span>
           <div className="remarque-body">
             <span className="remarque-label">REMARQUE</span>
@@ -150,6 +195,74 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         <PencilIcon size={18} />
         APPORTER UNE PRÉCISION
       </button>
+
+      {/* Menu "•••" : deux actions, réutilisant chacune un mécanisme déjà
+          existant — aucun second système d'édition/suppression. */}
+      {menuOpen && (
+        <div className="modal-backdrop" onClick={() => setMenuOpen(false)}>
+          <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="action-sheet-group">
+              {/* Exactement la même action que APPORTER UNE PRÉCISION. */}
+              <button
+                type="button"
+                className="action-sheet-item"
+                onClick={() => navigateToEditPerson(person.id)}
+              >
+                <PencilIcon size={18} />
+                Modifier la fiche
+              </button>
+              <button
+                type="button"
+                className="action-sheet-item danger"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setConfirmDeleteOpen(true);
+                }}
+              >
+                <TrashIcon size={18} />
+                Supprimer la fiche
+              </button>
+            </div>
+            <button
+              type="button"
+              className="action-sheet-cancel"
+              onClick={() => setMenuOpen(false)}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation explicite avant toute suppression — nomme le
+          destinataire concerné, jamais de suppression immédiate. Ne
+          supprime QUE ce destinataire (`deletePersonSynced` ne touche ni
+          aux rues ni aux autres personnes), puis revient à la recherche. */}
+      {confirmDeleteOpen && (
+        <div className="modal-backdrop" onClick={() => setConfirmDeleteOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <p className="modal-text">Supprimer {fullName(person)} ?</p>
+            <p className="hint">Cette action est irréversible.</p>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setConfirmDeleteOpen(false)}
+              >
+                ANNULER
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={deleting}
+                onClick={() => void handleConfirmDelete()}
+              >
+                SUPPRIMER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

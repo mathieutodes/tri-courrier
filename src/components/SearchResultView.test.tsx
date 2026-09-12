@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import SearchResultView from './SearchResultView';
 import type { Person } from '../types/person';
+
+// Le menu "•••" réutilise `deletePersonSynced` (le même mécanisme que la
+// Base de données) — simulé ici comme dans les tests de DatabasePage, pour
+// vérifier le COMPORTEMENT (bon ID, une seule fois, retour à la recherche)
+// sans dépendre d'IndexedDB réel dans cet environnement de test.
+const { mockDeletePersonSynced } = vi.hoisted(() => ({
+  mockDeletePersonSynced: vi.fn(async () => {}),
+}));
+
+vi.mock('../db/personStore', () => ({
+  deletePersonSynced: mockDeletePersonSynced,
+}));
 
 function person(overrides: Partial<Person>): Person {
   return {
@@ -20,6 +32,10 @@ function person(overrides: Partial<Person>): Person {
     ...overrides,
   };
 }
+
+beforeEach(() => {
+  mockDeletePersonSynced.mockClear();
+});
 
 afterEach(() => {
   cleanup();
@@ -277,6 +293,61 @@ describe('SearchResultView', () => {
       );
       expect(screen.getByText('4 Avenue de Paris')).not.toBeNull();
       expect(screen.queryByText('12 Rue Victor Hugo')).toBeNull();
+    });
+  });
+
+  describe('menu "•••" (Modifier / Supprimer la fiche)', () => {
+    it('le bouton "•••" ouvre un menu avec "Modifier la fiche" et "Supprimer la fiche"', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      expect(screen.queryByText('Modifier la fiche')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      expect(screen.getByText('Modifier la fiche')).not.toBeNull();
+      expect(screen.getByText('Supprimer la fiche')).not.toBeNull();
+    });
+
+    it('"Modifier la fiche" ouvre l’édition de CE destinataire, par ID stable (même mécanisme que APPORTER UNE PRÉCISION)', () => {
+      render(
+        <SearchResultView person={person({ id: 'person-42', colonne: 5 })} onNewSearch={() => {}} />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      fireEvent.click(screen.getByText('Modifier la fiche'));
+      expect(window.location.hash).toBe('#/database/edit/person-42');
+    });
+
+    it('"Supprimer la fiche" affiche une confirmation nommant le destinataire, sans suppression immédiate', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      expect(screen.getByText('Supprimer DUPONT Jean ?')).not.toBeNull();
+      expect(mockDeletePersonSynced).not.toHaveBeenCalled();
+    });
+
+    it('ANNULER dans la confirmation ne supprime rien', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      fireEvent.click(screen.getByRole('button', { name: 'ANNULER' }));
+      expect(screen.queryByText('Supprimer DUPONT Jean ?')).toBeNull();
+      expect(mockDeletePersonSynced).not.toHaveBeenCalled();
+    });
+
+    it('confirmer la suppression appelle `deletePersonSynced` avec le bon ID puis revient à la recherche', async () => {
+      const onNewSearch = vi.fn();
+      render(
+        <SearchResultView
+          person={person({ id: 'person-99', colonne: 5 })}
+          onNewSearch={onNewSearch}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      fireEvent.click(screen.getByRole('button', { name: 'SUPPRIMER' }));
+
+      await waitFor(() => {
+        expect(mockDeletePersonSynced).toHaveBeenCalledTimes(1);
+      });
+      expect(mockDeletePersonSynced).toHaveBeenCalledWith('person-99');
+      expect(onNewSearch).toHaveBeenCalledTimes(1);
     });
   });
 });

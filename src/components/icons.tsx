@@ -84,14 +84,26 @@ export function PersonIcon({ size = 22 }: IconProps) {
   );
 }
 
-/** Feuille + lignes de texte — bloc REMARQUE. */
+/** Feuille à coin plié + lignes de texte — bloc REMARQUE (esprit SF Symbols
+ * « doc.text ») : traits fins et réguliers, coins arrondis cohérents avec le
+ * reste de la famille d'icônes. */
 export function NoteIcon({ size = 22 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="4.5" y="3.5" width="15" height="17" rx="3" stroke="currentColor" strokeWidth="2" />
-      <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <line x1="8" y1="17" x2="12.5" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M6.75 3.5h7.4l4.35 4.35V19.5a1.25 1.25 0 0 1-1.25 1.25h-10.5a1.25 1.25 0 0 1-1.25-1.25v-15A1.25 1.25 0 0 1 6.75 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14.15 3.5v3.6a1 1 0 0 0 1 1h3.35"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <line x1="8.3" y1="12.2" x2="15.7" y2="12.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="8.3" y1="15.5" x2="15.7" y2="15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -120,14 +132,81 @@ export function FilterIcon({ size = 22 }: IconProps) {
   );
 }
 
-/** Boîtes aux lettres / panneau — carte emplacement. */
+/** Grille de quatre casiers — carte emplacement (esprit SF Symbols
+ * « square.grid.2x2 ») : évoque directement un ensemble de boîtes aux
+ * lettres / casiers de distribution, en géométrie pure — sans toit ni
+ * silhouette de bâtiment, pour un rendu plus élégant qu'une illustration
+ * littérale. Même poids de trait (1.6) et mêmes coins arrondis que le reste
+ * de la famille d'icônes de cet écran. */
 export function MailboxIcon({ size = 22 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3.5" y="7" width="17" height="12" rx="2.5" stroke="currentColor" strokeWidth="2" />
-      <line x1="3.5" y1="12" x2="20.5" y2="12" stroke="currentColor" strokeWidth="2" />
-      <line x1="9" y1="12" x2="9" y2="19" stroke="currentColor" strokeWidth="2" />
-      <path d="M8 7V5.5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2V7" stroke="currentColor" strokeWidth="2" />
+      <rect x="3.5" y="3.5" width="7.6" height="7.6" rx="1.9" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="12.9" y="3.5" width="7.6" height="7.6" rx="1.9" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="3.5" y="12.9" width="7.6" height="7.6" rx="1.9" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="12.9" y="12.9" width="7.6" height="7.6" rx="1.9" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** Camion de livraison + lignes de vitesse — bandeau RÉEXPÉDITION. Forme
+ * inspirée fidèlement du pictogramme de référence fourni (camion + trois
+ * lignes de vitesse décroissantes évoquant la rapidité de renvoi), mais
+ * redessinée en traits fins (poids 1.6, cohérent avec le reste de la
+ * famille d'icônes de cet écran) plutôt qu'en silhouette pleine — la couleur
+ * n'est jamais fixée ici : `currentColor` hérite du rouge iOS déjà appliqué
+ * par `.reexpedition-banner svg` / `.avatar-red`, fond toujours transparent. */
+export function TruckIcon({ size = 22 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <line x1="1.4" y1="8" x2="7.6" y2="8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="3.3" y1="11.3" x2="7.6" y2="11.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="5.2" y1="14.6" x2="7.6" y2="14.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="9.5" y="6.6" width="7.3" height="8.4" rx="1.3" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M16.8 10.1h2.5a1 1 0 0 1 .8.4l1.75 2.25a1 1 0 0 1 .2.6v1.65a1 1 0 0 1-1 1h-4.25Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12.1" cy="17.3" r="1.5" fill="currentColor" />
+      <circle cx="19.5" cy="17.3" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Trois points horizontaux — menu d'actions (« ••• »). */
+export function MoreIcon({ size = 22 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.9" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.9" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.9" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Corbeille — action « Supprimer la fiche ». */
+export function TrashIcon({ size = 22 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 7l.8 12.2a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <line x1="10" y1="10.8" x2="10" y2="16.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="14" y1="10.8" x2="14" y2="16.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
