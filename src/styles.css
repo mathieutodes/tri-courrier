@@ -14,10 +14,15 @@
 :root {
   color-scheme: light;
 
-  /* ---- Fond général de l'app : blanc / bleu glacier très clair ---- */
-  --app-bg: #eaf1fb;
+  /* ---- Fond général de l'app : bleu clair UNIFORME, seule source de
+     vérité pour TOUTES les pages (Recherche, Résultat, Base de données,
+     formulaires, gestion des rues, états vides…). Correspond à la teinte
+     visible dans le haut de l'ancien dégradé de l'écran résultat — plus
+     aucun dégradé nulle part : une couleur pleine, identique du haut jusqu'en
+     bas, y compris sur les pages qui défilent. Ne change jamais les fonds
+     des cartes, qui restent définis séparément (`--surface`, `--glass-*`). */
+  --app-bg: #d1e3fb;
   --bg-0: var(--app-bg);
-  --bg-1: #f6f9fd;
 
   /* ---- Neutres / texte ---- */
   --text-primary: #0c1526; /* texte principal, bleu nuit quasi noir */
@@ -155,22 +160,42 @@ button {
   color: inherit;
 }
 
+/* `height: 100%` conservé (nécessaire : c'est cette chaîne de pourcentages
+   qui permet à `.screen`/`.result` de résoudre leur propre `min-height:
+   100%` plus bas — la retirer casserait ce calcul). `min-height: 100dvh`
+   ajouté PAR-DESSUS comme PLANCHER supplémentaire : sur Safari/iOS, `100%`
+   (comme `100vh`) peut correspondre à une hauteur légèrement DIFFÉRENTE de
+   la zone réellement visible selon que la barre d'outils est repliée ou non
+   — `dvh` (« dynamic viewport height ») suit en temps réel la hauteur
+   RÉELLE de la fenêtre, garantissant que ces éléments ne sont jamais plus
+   courts qu'elle (repli silencieux sur `100%` pour les navigateurs sans
+   support de `dvh`, qui ignorent simplement cette seconde ligne). */
 html,
 body,
 #root {
   height: 100%;
+  min-height: 100dvh;
 }
 
-/* Fond général : base très claire + gradients radiaux extrêmement doux et
-   diffus (bleu glacier / gris bleuté). Aucun `background-attachment: fixed`
-   (coûteux sur Safari iOS) : le fond défile normalement avec le contenu. */
+/* Fond général : couleur UNIE (`--app-bg`, seule source de vérité — voir
+   :root), identique du haut jusqu'en bas sur TOUTE l'application, y compris
+   dans la safe-area et lors d'un rebond de scroll iOS. Déclarée aussi sur
+   `html` (pas seulement `body`) : c'est l'élément `<html>` qui, dès qu'il a
+   son propre fond spécifié, est utilisé par le navigateur pour peindre le
+   "canvas" (toute la zone visible, au-delà même de la boîte de `body`) — les
+   deux doivent donc toujours porter EXACTEMENT la même couleur (voir aussi
+   le style anti-flash de `index.html`, à garder synchronisé). Plus aucun
+   dégradé/halo ici (l'ancienne variation "bleu en haut → presque blanc en
+   bas" est supprimée). Aucun `background-attachment: fixed` (coûteux sur
+   Safari iOS) : le fond défile normalement avec le contenu, toujours dans
+   la même teinte. */
+html {
+  background-color: var(--bg-0);
+}
+
 body {
   margin: 0;
   background-color: var(--bg-0);
-  background-image:
-    radial-gradient(1100px 720px at 12% -8%, rgba(112, 168, 255, 0.16), transparent 60%),
-    radial-gradient(900px 680px at 108% 6%, rgba(154, 196, 255, 0.14), transparent 58%),
-    radial-gradient(1000px 820px at 50% 118%, rgba(196, 214, 238, 0.2), transparent 62%);
   color: var(--text);
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial,
@@ -284,12 +309,20 @@ body {
    plus 4 éléments à l'écran à la fois, reste négligeable en coût. */
 .card-hero {
   background: var(--glass-bg);
-  border-color: rgba(255, 255, 255, 0.7);
+  /* Aucune bordure : les 4 cartes de l'écran résultat (identité,
+     réexpédition, emplacement, remarque) se détachent du fond UNIQUEMENT
+     par leur couleur de surface, leur ombre extérieure et leur
+     border-radius — jamais par un contour, quelle que soit sa couleur.
+     `border: none` remplace ici la bordure de `.card` (blanche/translucide
+     auparavant) : `.card-hero` est déclarée après `.card` et partagée
+     exclusivement par ces 4 cartes, donc sans effet sur les autres écrans
+     qui utilisent `.card` seule (Base de données, formulaires, rues). */
+  border: none;
   border-radius: var(--radius-hero);
-  /* Ombre plus douce et diffuse + très léger liseré clair en haut (lumière
-     interne) — sensation de profondeur "verre" plutôt qu'une carte plate. */
+  /* Ombre extérieure diffuse conservée pour la profondeur — le liseré clair
+     "inset" qui simulait un contour lumineux en haut de la carte a été
+     retiré (voir REMARQUE ci-dessus : plus aucun liseré, même blanc). */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
     0 1px 2px rgba(30, 60, 120, 0.04),
     0 22px 44px -26px rgba(30, 60, 120, 0.28);
   backdrop-filter: blur(16px);
@@ -788,14 +821,11 @@ body {
   align-items: stretch;
   justify-content: flex-start;
   text-align: left;
-  /* Fond spécifique à cet écran uniquement (jamais sur les autres pages) :
-     quelques nappes radiales très douces bleu clair/blanc, superposées au
-     fond global du body — sensation lumineuse et profonde, sans image
-     externe et sans rien charger visuellement. */
-  background-image:
-    radial-gradient(120% 60% at 15% 0%, rgba(150, 190, 255, 0.22), transparent 60%),
-    radial-gradient(100% 55% at 100% 30%, rgba(200, 220, 255, 0.2), transparent 55%),
-    radial-gradient(90% 50% at 50% 100%, rgba(255, 255, 255, 0.5), transparent 60%);
+  /* Plus de fond spécifique à cet écran : il hérite du fond général unique
+     de l'app (`--app-bg`, transparent ici — voir body/:root) — la variation
+     de teinte "bleu en haut → presque blanc en bas" propre à cet écran a
+     été supprimée pour une couleur uniforme sur toute l'application. */
+  background: transparent;
   /* Safe area iOS (Dynamic Island) + respiration, mais compact (voir section
      densité du design system) : jamais d'espace vide artificiel. Les cartes
      s'enchaînent par un simple `gap` régulier ci-dessous — AUCUN élément de
@@ -1104,13 +1134,14 @@ body {
    recolorée), pour rester dans la même famille visuelle sans dessiner de
    cadre coloré. */
 .reexpedition-banner {
+  /* Fond et ombre : plus aucune surcharge ici — la carte hérite du même
+     blanc (`.card`) et de la même ombre neutre (`.card-hero`) que les 3
+     autres cartes de l'écran résultat, pour une famille de surfaces
+     strictement homogène. Le rouge n'attire plus l'œil que sur la pastille,
+     le pictogramme et le titre RÉEXPÉDITION (voir plus bas). Toujours aucune
+     bordure ni liseré (`border: none` vient de `.card-hero`). */
   gap: var(--s-3);
   padding: 16px var(--s-4);
-  background: rgba(255, 59, 48, 0.1);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 1px 2px rgba(30, 60, 120, 0.04),
-    0 20px 38px -24px rgba(255, 59, 48, 0.26);
   color: var(--text-primary);
   text-align: left;
 }
@@ -1184,18 +1215,23 @@ body {
 
 .remarque-label {
   /* Typographie partagée avec RÉEXPÉDITION et PANNEAU/COLONNE/LOGEMENT —
-     voir la règle commune plus haut. Seule la couleur change ici. */
+     voir la règle commune plus haut (taille, graisse, interligne,
+     espacement de capitale et casse inchangés). Couleur texte PRINCIPALE
+     (noir) : seul RÉEXPÉDITION reste rouge et PANNEAU/COLONNE/LOGEMENT
+     bleus parmi les titres de section. */
   display: block;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 /* Texte de la remarque : lisible mais délibérément SECONDAIRE par rapport à
    l'emplacement (pas de grosse typographie). */
 .remarque-text {
-  /* Typographie partagée avec l'adresse et le texte de réexpédition — voir
-     la règle commune plus haut. Seule la couleur change ici. */
+  /* Typographie ET couleur partagées avec l'adresse et le texte de
+     réexpédition (voir la règle commune plus haut) : même gris secondaire
+     pour les trois — le contenu de la remarque n'est plus mis en avant en
+     texte principal. */
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;

@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#eef3f9" />
+    <meta name="theme-color" content="#d1e3fb" />
     <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -13,10 +13,15 @@
     <meta name="description" content="Retrouver rapidement la colonne de boîte aux lettres d’un destinataire." />
     <title>Tri Courrier</title>
     <style>
-      /* Anti-flash : même teinte de base que le fond "Liquid Glass" de
-         l'app (voir src/styles.css) avant que le CSS ne soit appliqué. */
+      /* Anti-flash : même teinte que le fond global de l'app (`--app-bg`,
+         voir src/styles.css) avant que le CSS ne soit appliqué. IMPORTANT :
+         c'est CETTE couleur (déclarée sur `html`, pas seulement `body`) que
+         Safari/iOS utilise pour peindre le "canvas" (toute la zone visible,
+         y compris sous le contenu, la safe-area et en cas de rebond de
+         scroll) — elle doit donc rester strictement synchronisée avec
+         `--app-bg`, jamais une valeur différente ou obsolète. */
       html {
-        background: #eef3f9;
+        background: #d1e3fb;
       }
     </style>
   </head>
