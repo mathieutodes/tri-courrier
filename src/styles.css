@@ -1255,73 +1255,110 @@ body {
 }
 
 /* =========================================================================
-   Menu "•••" de l'écran résultat — action sheet iOS (Modifier / Supprimer).
-   Réutilise `.modal-backdrop` déjà existant ; propre au groupe d'actions
-   uniquement, aucune nouvelle logique de fond/overlay.
+   Menu "•••" de l'écran résultat — petit popover contextuel ancré au bouton
+   (Modifier / Supprimer), dans l'esprit d'un menu contextuel iOS natif.
+   `.result-popover-scrim` sert UNIQUEMENT à détecter le clic extérieur : il
+   est plein écran mais totalement transparent (aucun fond assombri, aucun
+   flou) — le reste de l'écran résultat reste visible avec ses couleurs
+   normales pendant que le popover est ouvert.
    ========================================================================= */
 
-.action-sheet {
-  width: 100%;
-  max-width: 400px;
+.result-popover-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: transparent;
+}
+
+/* Positionné en `fixed` par JS (top/right calculés via
+   `getBoundingClientRect()` sur le bouton "•••" — jamais de coordonnées
+   fixes propres à un seul iPhone) : s'ouvre juste sous le bouton, aligné à
+   droite de l'écran. */
+.result-popover-wrap {
+  position: fixed;
+  z-index: 61;
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
+  transform-origin: top right;
+  animation: result-popover-in 160ms cubic-bezier(0.22, 0.8, 0.2, 1) both;
 }
 
-.action-sheet-group {
+@media (prefers-reduced-motion: reduce) {
+  .result-popover-wrap {
+    animation: none;
+  }
+}
+
+@keyframes result-popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Petit repère triangulaire orienté vers le bouton "•••" : un carré tourné
+   à 45°, à moitié recouvert par le popover (`z-index` inférieur + marge
+   négative) — seule sa pointe supérieure reste visible. */
+.result-popover-notch {
+  position: relative;
+  z-index: 1;
+  align-self: flex-end;
+  width: 14px;
+  height: 14px;
+  margin-right: 18px;
+  margin-bottom: -7px;
   background: var(--glass-bg-strong);
-  border-radius: var(--radius-hero);
-  overflow: hidden;
-  box-shadow: var(--glass-shadow);
-  animation: glass-in 200ms cubic-bezier(0.22, 0.8, 0.2, 1);
+  border-radius: 3px;
+  transform: rotate(45deg);
 }
 
-.action-sheet-item {
+.result-popover {
+  position: relative;
+  z-index: 2;
+  width: max-content;
+  min-width: 186px;
+  max-width: min(260px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg-strong);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.result-popover-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  min-height: 56px;
+  min-height: 48px;
   padding: 0 var(--s-4);
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border-soft);
   color: var(--ios-blue);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  transition: background var(--t-fast);
 }
 
-.action-sheet-item:last-child {
+.result-popover-item:last-child {
   border-bottom: none;
 }
 
-.action-sheet-item:active {
-  background: var(--surface-soft);
+/* Pression iOS immédiate : ni fondu à l'appui ni au relâchement (pas de
+   `transition`), pour un retour tactile net plutôt qu'une animation. */
+.result-popover-item:active {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.action-sheet-item.danger {
+.result-popover-item.danger {
   color: var(--danger);
-}
-
-.action-sheet-cancel {
-  width: 100%;
-  min-height: 56px;
-  background: var(--glass-bg-strong);
-  border: none;
-  border-radius: var(--radius-hero);
-  color: var(--ios-blue);
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--glass-shadow);
-  transition: background var(--t-fast);
-}
-
-.action-sheet-cancel:active {
-  background: var(--surface-soft);
 }
 
 /* =========================================================================

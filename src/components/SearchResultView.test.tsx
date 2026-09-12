@@ -296,28 +296,73 @@ describe('SearchResultView', () => {
     });
   });
 
-  describe('menu "•••" (Modifier / Supprimer la fiche)', () => {
-    it('le bouton "•••" ouvre un menu avec "Modifier la fiche" et "Supprimer la fiche"', () => {
+  describe('menu "•••" (popover Modifier / Supprimer la fiche)', () => {
+    it('le bouton "•••" ouvre un popover (role="menu") avec "Modifier la fiche" et "Supprimer la fiche" en role="menuitem"', () => {
       render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
       expect(screen.queryByText('Modifier la fiche')).toBeNull();
-      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
-      expect(screen.getByText('Modifier la fiche')).not.toBeNull();
-      expect(screen.getByText('Supprimer la fiche')).not.toBeNull();
+      const trigger = screen.getByRole('button', { name: 'Options' });
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      fireEvent.click(trigger);
+
+      expect(screen.getByRole('menu')).not.toBeNull();
+      expect(screen.getByRole('menuitem', { name: /Modifier la fiche/ })).not.toBeNull();
+      expect(screen.getByRole('menuitem', { name: /Supprimer la fiche/ })).not.toBeNull();
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      // Plus d'option "Annuler" : le popover ne contient que les deux actions.
+      expect(screen.queryByText('Annuler')).toBeNull();
     });
 
-    it('"Modifier la fiche" ouvre l’édition de CE destinataire, par ID stable (même mécanisme que APPORTER UNE PRÉCISION)', () => {
+    it('re-toucher "•••" ferme le popover', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      const trigger = screen.getByRole('button', { name: 'Options' });
+      fireEvent.click(trigger);
+      expect(screen.queryByRole('menu')).not.toBeNull();
+
+      fireEvent.click(trigger);
+
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('un clic en dehors du popover le ferme', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      const menu = screen.getByRole('menu');
+      expect(menu).not.toBeNull();
+
+      // La couche transparente plein écran détecte le clic extérieur.
+      const scrim = menu.parentElement as HTMLElement;
+      fireEvent.click(scrim);
+
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('la touche Échap ferme le popover', () => {
+      render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+      expect(screen.queryByRole('menu')).not.toBeNull();
+
+      fireEvent.keyDown(window, { key: 'Escape' });
+
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('"Modifier la fiche" ouvre l’édition de CE destinataire, par ID stable (même mécanisme que APPORTER UNE PRÉCISION), et ferme le popover', () => {
       render(
         <SearchResultView person={person({ id: 'person-42', colonne: 5 })} onNewSearch={() => {}} />,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Options' }));
-      fireEvent.click(screen.getByText('Modifier la fiche'));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Modifier la fiche/ }));
       expect(window.location.hash).toBe('#/database/edit/person-42');
+      expect(screen.queryByRole('menu')).toBeNull();
     });
 
-    it('"Supprimer la fiche" affiche une confirmation nommant le destinataire, sans suppression immédiate', () => {
+    it('"Supprimer la fiche" ferme le popover et affiche une confirmation nommant le destinataire, sans suppression immédiate', () => {
       render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
       fireEvent.click(screen.getByRole('button', { name: 'Options' }));
-      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Supprimer la fiche/ }));
+      expect(screen.queryByRole('menu')).toBeNull();
       expect(screen.getByText('Supprimer DUPONT Jean ?')).not.toBeNull();
       expect(mockDeletePersonSynced).not.toHaveBeenCalled();
     });
@@ -325,7 +370,7 @@ describe('SearchResultView', () => {
     it('ANNULER dans la confirmation ne supprime rien', () => {
       render(<SearchResultView person={person({ colonne: 5 })} onNewSearch={() => {}} />);
       fireEvent.click(screen.getByRole('button', { name: 'Options' }));
-      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Supprimer la fiche/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ANNULER' }));
       expect(screen.queryByText('Supprimer DUPONT Jean ?')).toBeNull();
       expect(mockDeletePersonSynced).not.toHaveBeenCalled();
@@ -340,7 +385,7 @@ describe('SearchResultView', () => {
         />,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Options' }));
-      fireEvent.click(screen.getByText('Supprimer la fiche'));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Supprimer la fiche/ }));
       fireEvent.click(screen.getByRole('button', { name: 'SUPPRIMER' }));
 
       await waitFor(() => {

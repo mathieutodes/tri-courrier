@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { navigateToEditPerson } from '../App';
 import { deletePersonSynced } from '../db/personStore';
 import type { Person } from '../types/person';
@@ -37,8 +37,35 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
   // fiche » réutilise exactement `deletePersonSynced` (le même mécanisme que
   // la Base de données, IndexedDB compris — aucune logique dupliquée).
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Ferme le popover avec Échap, où que soit le focus.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen]);
+
+  function toggleMenu() {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    // Position calculée dynamiquement par rapport au bouton "•••" réel
+    // (jamais de coordonnées fixes propres à un seul iPhone) : le popover
+    // s'ouvre juste sous le bouton, aligné à droite de l'écran.
+    const rect = menuButtonRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPos({ top: rect.bottom + 10, right: window.innerWidth - rect.right });
+    }
+    setMenuOpen(true);
+  }
 
   async function handleConfirmDelete() {
     setDeleting(true);
@@ -92,10 +119,14 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
           <span>Recherche</span>
         </button>
         <button
+          ref={menuButtonRef}
           type="button"
           className="result-menu-btn"
-          onClick={() => setMenuOpen(true)}
+          onClick={toggleMenu}
           aria-label="Options"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls="result-options-menu"
         >
           <MoreIcon size={18} />
         </button>
@@ -196,24 +227,40 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
         APPORTER UNE PRÉCISION
       </button>
 
-      {/* Menu "•••" : deux actions, réutilisant chacune un mécanisme déjà
-          existant — aucun second système d'édition/suppression. */}
-      {menuOpen && (
-        <div className="modal-backdrop" onClick={() => setMenuOpen(false)}>
-          <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="action-sheet-group">
+      {/* Menu "•••" : petit popover ancré au bouton, deux actions réutilisant
+          chacune un mécanisme déjà existant — aucun second système
+          d'édition/suppression. La couche `.result-popover-scrim` ne sert
+          qu'à détecter le clic extérieur : elle est totalement transparente
+          (aucun assombrissement de l'écran résultat). */}
+      {menuOpen && menuPos && (
+        <div className="result-popover-scrim" onClick={() => setMenuOpen(false)}>
+          <div
+            id="result-options-menu"
+            className="result-popover-wrap"
+            style={{ top: menuPos.top, right: menuPos.right }}
+            role="menu"
+            aria-label="Options de la fiche"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="result-popover-notch" aria-hidden="true" />
+            <div className="result-popover">
               {/* Exactement la même action que APPORTER UNE PRÉCISION. */}
               <button
                 type="button"
-                className="action-sheet-item"
-                onClick={() => navigateToEditPerson(person.id)}
+                role="menuitem"
+                className="result-popover-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigateToEditPerson(person.id);
+                }}
               >
                 <PencilIcon size={18} />
                 Modifier la fiche
               </button>
               <button
                 type="button"
-                className="action-sheet-item danger"
+                role="menuitem"
+                className="result-popover-item danger"
                 onClick={() => {
                   setMenuOpen(false);
                   setConfirmDeleteOpen(true);
@@ -223,13 +270,6 @@ export default function SearchResultView({ person, onNewSearch }: Props) {
                 Supprimer la fiche
               </button>
             </div>
-            <button
-              type="button"
-              className="action-sheet-cancel"
-              onClick={() => setMenuOpen(false)}
-            >
-              Annuler
-            </button>
           </div>
         </div>
       )}
