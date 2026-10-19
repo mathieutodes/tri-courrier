@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Person, PersonInput } from '../types/person';
+import { buildAddressOptions } from '../utils/addressFilter';
 import type { Rue } from '../types/rue';
 import { decomposeAdresse } from '../utils/adresse';
 import {
@@ -12,6 +13,7 @@ import {
 interface Props {
   initial?: Person;
   rues: Rue[];
+  persons?: Person[];
   onSubmit: (value: PersonInput) => void;
   onCancel: () => void;
   /**
@@ -65,12 +67,15 @@ function toRawForm(person: Person | undefined, rues: Rue[]): RawPersonForm {
 export default function PersonForm({
   initial,
   rues,
+  persons,
   onSubmit,
   onCancel,
   autoFocusRemarque = false,
 }: Props) {
   const [fields, setFields] = useState<RawPersonForm>(() => toRawForm(initial, rues));
   const [errors, setErrors] = useState<PersonFormErrors>({});
+  const addressOptions = buildAddressOptions(persons ?? []);
+  const [selectedAddress, setSelectedAddress] = useState('');
   const remarqueRef = useRef<HTMLTextAreaElement>(null);
 
   // Filet de sécurité (défense en profondeur) : si ce formulaire a malgré
@@ -142,6 +147,27 @@ export default function PersonForm({
     setFields((f) => ({ ...f, [key]: value }));
   }
 
+  function chooseAddress(value: string) {
+    setSelectedAddress(value);
+
+    const option = addressOptions.find((address) => address.key === value);
+    if (!option) {
+      setFields((current) => ({ ...current, numero: '', rueId: '' }));
+      return;
+    }
+
+    const resolved = decomposeAdresse(option.label, rues);
+    if (resolved) {
+      setFields((current) => ({
+        ...current,
+        numero: String(resolved.numeroRue),
+        rueId: resolved.rueId,
+      }));
+    } else {
+      setFields((current) => ({ ...current, numero: '', rueId: '' }));
+    }
+  }
+
   function setMode(mode: RawPersonForm['mode']) {
     setFields((f) => ({ ...f, mode }));
   }
@@ -156,7 +182,20 @@ export default function PersonForm({
       initial && !addressTouched.current
         ? { adresse: initial.adresse, numeroRue: initial.numeroRue, rueId: initial.rueId }
         : null;
-    const result = validatePersonForm(fields, rues, legacyAddress);
+    const chosenAddress = !initial
+      ? addressOptions.find((address) => address.key === selectedAddress)
+      : undefined;
+
+    const unresolvedAddress: LegacyAddress | null =
+      chosenAddress && !decomposeAdresse(chosenAddress.label, rues)
+        ? {
+            adresse: chosenAddress.label,
+            numeroRue: null,
+            rueId: null,
+          }
+        : null;
+
+    const result = validatePersonForm(fields, rues, legacyAddress ?? unresolvedAddress);
     if (!result.valid || !result.value) {
       setErrors(result.errors);
       return;
@@ -197,6 +236,25 @@ export default function PersonForm({
 
       <div className="form-card card">
         <span className="form-card-title">Adresse</span>
+        {!initial && addressOptions.length > 0 && (
+          <label className="field">
+            <span className="field-label">Choisir une adresse existante</span>
+            <select
+              className="input"
+              value={selectedAddress}
+              onChange={(e) => chooseAddress(e.target.value)}
+            >
+              <option value="">— Nouvelle adresse / saisie manuelle —</option>
+              {addressOptions.map((address) => (
+                <option key={address.key} value={address.key}>
+                  {address.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {(initial || !selectedAddress) && (
+          <>
         <label className="field">
           <span className="field-label">Numéro *</span>
           <input
@@ -236,7 +294,9 @@ export default function PersonForm({
             <span className="field-hint">Adresse actuelle : {legacyAdresse}</span>
           )}
         </label>
-      </div>
+          </>
+        )}
+        </div>
 
       <div className="form-card card">
         <span className="form-card-title">Boîte aux lettres</span>

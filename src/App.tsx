@@ -14,6 +14,7 @@ import DatabasePage from './pages/DatabasePage';
 type Route =
   | { kind: 'search' }
   | { kind: 'database' }
+  | { kind: 'database-add' }
   | { kind: 'database-edit'; personId: string };
 
 function parseRoute(): Route {
@@ -22,6 +23,7 @@ function parseRoute(): Route {
   if (editMatch) {
     return { kind: 'database-edit', personId: decodeURIComponent(editMatch[1]) };
   }
+  if (hash === '/database/add') return { kind: 'database-add' };
   if (hash === '/database') return { kind: 'database' };
   return { kind: 'search' };
 }
@@ -51,5 +53,10 @@ export default function App() {
   }, []);
 
   if (route.kind === 'search') return <SearchPage />;
-  return <DatabasePage editPersonId={route.kind === 'database-edit' ? route.personId : null} />;
+  return (
+    <DatabasePage
+      editPersonId={route.kind === 'database-edit' ? route.personId : null}
+      openAdd={route.kind === 'database-add'}
+    />
+  );
 }

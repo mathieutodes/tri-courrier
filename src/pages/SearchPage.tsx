@@ -5,7 +5,7 @@ import { ensurePersonsLoaded, refreshPersons, usePersons } from '../db/personSto
 import type { Person } from '../types/person';
 import { normalizeText } from '../utils/normalizeText';
 import SearchResultView from '../components/SearchResultView';
-import { DatabaseIcon, PersonIcon, SearchIcon } from '../components/icons';
+import { DatabaseIcon, PersonIcon, PlusIcon, SearchIcon } from '../components/icons';
 
 type Phase =
   | { kind: 'idle' }
@@ -132,6 +132,15 @@ export default function SearchPage() {
         aria-label="Base de données"
       >
         <DatabaseIcon />
+      </button>
+
+      <button
+        type="button"
+        className="db-add-btn home-add-btn"
+        onClick={() => { window.location.hash = '/database/add'; }}
+        aria-label="Ajouter une personne"
+      >
+        <PlusIcon size={20} />
       </button>
 
       <div className={`home-inner${hasQuery ? ' home-inner-active' : ''}`}>

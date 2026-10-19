@@ -57,12 +57,15 @@ interface Props {
    * `null`/`undefined` : ouverture normale sur la liste.
    */
   editPersonId?: string | null;
+  openAdd?: boolean;
 }
 
-export default function DatabasePage({ editPersonId = null }: Props) {
+export default function DatabasePage({ editPersonId = null, openAdd = false }: Props) {
   const persons = usePersons();
   const rues = useRues();
-  const [view, setView] = useState<View>({ kind: 'list' });
+  const [view, setView] = useState<View>(
+    openAdd ? { kind: 'add' } : { kind: 'list' },
+  );
   // Évite de ré-imposer la vue « Modifier » si l'utilisateur revient ensuite
   // volontairement sur la liste (Retour) : un ID donné n'est consommé qu'UNE
   // SEULE fois.
@@ -286,6 +289,7 @@ export default function DatabasePage({ editPersonId = null }: Props) {
           <PersonForm
             initial={isEdit ? view.person : undefined}
             rues={rues}
+              persons={persons}
             onSubmit={isEdit ? handleEdit : handleAdd}
             onCancel={() => setView({ kind: 'list' })}
             autoFocusRemarque={isEdit && view.autoFocusRemarque === true}

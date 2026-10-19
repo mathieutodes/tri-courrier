@@ -1969,3 +1969,19 @@ select.input {
   margin-bottom: var(--s-4);
   text-align: center;
 }
+
+/* Bouton d'ajout flottant — page d'accueil uniquement */
+.home-add-btn {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  width: 56px;
+  height: 56px;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.28);
+}
+
+/* Espace pour que le bouton flottant ne masque pas le bas de la Base de données */
+.db-page-body {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+}
